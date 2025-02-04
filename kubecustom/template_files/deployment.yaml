@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: USER-TAG
+  labels:
+    k8s-app: USER
+spec:
+  replicas: REPLICAS
+  selector:
+    matchLabels:
+      k8s-app: USER
+  template:
+    metadata:
+      labels:
+        k8s-app: USER
+    spec:
+      priorityClassName: nice
+      tolerations:
+        - key: "nautilus.io/suncave"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "nautilus.io/wave"
+          operator: "Exists"
+          effect: "NoSchedule"
+        - key: "nautilus.io/science-dmz"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+      - image: CONTAINERIMAGE
+        name: CONTAINERNAME
+        resources:
+          limits:
+            cpu: CPUS
+            memory: MEMORYG
+            ephemeral-storage: 20Gi
+          requests:
+            cpu: CPUS
+            memory: MEMORYG
+            ephemeral-storage: 20Gi
+        volumeMounts:
+          - name: manager-config-secret
+            mountPath: "/etc/qcfractal-manager"
+            readOnly: true
+          - name: fscratch
+            mountPath: /fscratch
+        env:
+          - name: SCF_MEM_SAFETY_FACTOR
+            value: "0.5"
+      volumes:
+        - name: manager-config-secret
+          secret:
+            secretName: USER-TAG
+        - name: fscratch
+          emptyDir: {}

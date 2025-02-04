@@ -3,8 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Secret file
+kubecustom/template_files/secret.txt
+
 # C extensions
 *.so
+
+# VS Code
+.vscode/
 
 # Distribution / packaging
 .Python
@@ -64,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_autosummary
 
 # PyBuilder
 target/

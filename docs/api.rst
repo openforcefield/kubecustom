@@ -2,6 +2,8 @@ API Documentation
 =================
 
 .. autosummary::
-   :toctree: autosummary
+   :toctree: _autosummary
+   :template: module.rst
+   :recursive:
 
-   kubecustom.canvas
+   kubecustom

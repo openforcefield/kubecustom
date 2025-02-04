@@ -1,0 +1,18 @@
+name: kubecustom
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python
+  - pip
+  - numpy
+  - kubernetes
+  - pyyaml
+  - sphinx>2.1
+  - docutils>=0.17
+  - pre-commit
+  - black
+  - sphinx_design
+  - sphinx_copybutton
+  - pydata_sphinx_theme

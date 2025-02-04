@@ -1,4 +1,4 @@
 Developer Guide
 ===============
 
-This page details how to contribute to KubeCustom. 
+This page details how to contribute to kubecustom.
