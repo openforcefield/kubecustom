@@ -13,6 +13,6 @@ dependencies:
   - docutils>=0.17
   - pre-commit
   - black
-  - sphinx_design
-  - sphinx_copybutton
-  - pydata_sphinx_theme
+  - sphinx-design
+  - sphinx-copybutton
+  - pydata-sphinx-theme
