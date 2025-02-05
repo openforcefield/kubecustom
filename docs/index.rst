@@ -6,6 +6,8 @@
 Welcome to kubecustom's documentation!
 =========================================================
 
+**This is a set of informal tools for internal use. We make no guarantees of versioning, functionality, or support.**
+
 .. grid:: 1 1 2 2
 
     .. grid-item-card:: Getting Started

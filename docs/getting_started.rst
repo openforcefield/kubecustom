@@ -8,7 +8,7 @@ Installation
 
 * Step 1: Download the main branch from our GitHub page as a zip file, or clone it to your working directory with:
 
-    ``git clone https://github.com/jaclark5/kubecustom``
+    ``git clone https://github.com/openforcefield/kubecustom``
 
 * Step 2 (Optional): If you are using conda and you want to create a new environment for this package you may install with:
 
