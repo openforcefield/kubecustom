@@ -53,7 +53,7 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx_design",
     "sphinx_copybutton",
-    "m2r2",
+    #    "m2r2",
     "nbsphinx",
 ]
 
@@ -70,7 +70,7 @@ templates_path = [os.path.join("_templates", "autosummary")]
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_suffix = [".rst", ".md"]
+source_suffix = [".rst"]
 # source_suffix = '.rst'
 
 # The master toctree document.

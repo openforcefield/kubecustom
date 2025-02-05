@@ -16,3 +16,4 @@ dependencies:
   - sphinx-design
   - sphinx-copybutton
   - pydata-sphinx-theme
+  - nbsphinx
