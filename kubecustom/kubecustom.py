@@ -10,11 +10,7 @@ from .deployment import create_deployment, delete_deployment
 
 try:
     MyDataInstance = MyData()
-    _user = MyDataInstance.get_user()
-    _namespace = MyDataInstance.get_namespace()
 except Exception:
-    _namespace = "default"
-    _user = "default"
     warnings.warn(
         "Could not import namespace or user strings, functions imported from this module may not operate as expected "
         "until you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from kubecustom "
@@ -27,10 +23,10 @@ def create_secret_deployment(
     tag,
     cpus,
     memory,
-    user=_user,
+    user=None,
     replicas=2,
     excluded_nodes=None,
-    namespace=_namespace,
+    namespace=None,
     verbose=True,
 ):
     """Create a secret and deployment with specified resources using template yaml files
@@ -44,8 +40,7 @@ def create_secret_deployment(
         cpus (int): Number of CPUs to use per replica (i.e., pod)
         memory (int): Number of GB of memory to request per replica
         user (str, optional): Initials of user, added to secret and deployment names for use as a 'keep_key' in other
-        functions.
-        For example, 'my-organization-my-initials'. Defaults to :func:`kubecustom.secret.MyData.get_user`
+        functions. For example, 'my-organization-my-initials'. Defaults to :func:`kubecustom.secret.MyData.get_user`
         replicas (int, optional): Number of replicas (i.e., pods) to create. Defaults to 2.
         excluded_nodes (list, optional): List of node names to exclude. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
@@ -56,51 +51,53 @@ def create_secret_deployment(
         ValueError: Check that target directory for jobs exists
     """
 
+    user = MyDataInstance.get_user() if user is None else user
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     if not os.path.isdir(path):
         raise ValueError(f"Directory could not be found: {path}")
 
-    cwd = os.getcwd()
-    os.chdir(path)
-
-    filename_deployment = os.path.join((path, "deployment.yaml"))
-    filename_manager = os.path.join((path, "manager.yaml"))
+    filename_deployment = os.path.join(path, "deployment.yaml")
+    filename_manager = os.path.join(path, "manager.yaml")
     template_deployment, template_manager = load_template_paths()
 
     shutil.copyfile(template_deployment, filename_deployment)
     shutil.copyfile(template_manager, filename_manager)
 
     find_replace = {
-        "USER": user,
+        "USER": MyDataInstance.get_user(),
         "TAG": tag,
-        "CPUs": cpus,
+        "CPUS": cpus,
         "MEMORY": memory,
         "REPLICAS": replicas,
+        "CONTAINERNAME": MyDataInstance.get_container_name(),
+        "CONTAINERIMAGE": MyDataInstance.get_container_image(),
     }
-    file_find_replace("deployment.yaml", find_replace)
-    find_replace.update(
-        {
-            "USERNAME": MyDataInstance.get_username(),
-            "PASSWORD": MyDataInstance.get_password(),
-            "CONTAINERNAME": MyDataInstance.get_container_name(),
-            "CONTAINERIMAGE": MyDataInstance.get_container_image(),
-            "CLUSTER": MyDataInstance.get_cluster(),
-        }
-    )
-    file_find_replace("manager.yaml", find_replace)
+    file_find_replace(filename_deployment, find_replace)
+
+    find_replace = {
+        "USERNAME": MyDataInstance.get_username(),
+        "PASSWORD": MyDataInstance.get_password(),
+        "CLUSTER": MyDataInstance.get_cluster(),
+        "CPUS": cpus,
+        "MEMORY": memory,
+        "TAG": tag,
+    }
+    file_find_replace(filename_manager, find_replace)
 
     deployment_name = f"{user}-{tag}"
-    create_secret("manager.yaml", deployment_name, namespace=namespace, verbose=verbose)
+    create_secret(
+        filename_manager, deployment_name, namespace=namespace, verbose=verbose
+    )
     create_deployment(
-        "deployment.yaml",
+        filename_deployment,
         excluded_nodes=excluded_nodes,
         namespace=namespace,
         verbose=verbose,
     )
 
-    os.chdir(cwd)
 
-
-def delete_secret_deployment(deployment_name, namespace=_namespace, verbose=True):
+def delete_secret_deployment(deployment_name, namespace=None, verbose=True):
     """Delete a deployment and secret, assuming they have the same name
 
     Args:
@@ -110,5 +107,6 @@ def delete_secret_deployment(deployment_name, namespace=_namespace, verbose=True
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
     delete_secret(deployment_name, namespace=namespace, verbose=verbose)
     delete_deployment(deployment_name, namespace=namespace, verbose=verbose)

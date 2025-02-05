@@ -210,9 +210,7 @@ class MyData:
 
 try:
     MyDataInstance = MyData()
-    _namespace = MyDataInstance.get_namespace()
 except Exception:
-    _namespace = "default"
     warnings.warn(
         "Could not import namespace, functions imported from this module may not operate as expected until "
         "you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from "
@@ -220,7 +218,7 @@ except Exception:
     )
 
 
-def create_secret(manager_yaml, secret_name, namespace=_namespace, verbose=True):
+def create_secret(manager_yaml, secret_name, namespace=None, verbose=True):
     """Create a secret from a manager.yaml
 
     Args:
@@ -233,6 +231,8 @@ def create_secret(manager_yaml, secret_name, namespace=_namespace, verbose=True)
     Raises:
         FileExistsError: Check that manager.yaml file exists
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()  # Refresh credentials
 
@@ -261,7 +261,7 @@ def create_secret(manager_yaml, secret_name, namespace=_namespace, verbose=True)
             print(f"Error creating secret: {e}")
 
 
-def delete_secret(secret_name, namespace=_namespace, verbose=True):
+def delete_secret(secret_name, namespace=None, verbose=True):
     """Delete a kubernetes secret
 
     Args:
@@ -270,6 +270,8 @@ def delete_secret(secret_name, namespace=_namespace, verbose=True):
         :func:`kubecustom.secret.MyData.get_namespace`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()
     api_instance = client.CoreV1Api()

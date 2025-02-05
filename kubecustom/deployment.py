@@ -17,9 +17,7 @@ from .pod import sort_pods_by_deployment, get_pods_resource_info, delete_pod
 
 try:
     MyDataInstance = MyData()
-    _namespace = MyDataInstance.get_namespace()
 except Exception:
-    _namespace = "default"
     warnings.warn(
         "Could not import namespace, functions imported from this module may not operate as expected until "
         "you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from "
@@ -28,7 +26,7 @@ except Exception:
 
 
 def create_deployment(
-    deployment_yaml, excluded_nodes=None, namespace=_namespace, verbose=True
+    deployment_yaml, excluded_nodes=None, namespace=None, verbose=True
 ):
     """Create a deployment from yaml file
 
@@ -39,6 +37,8 @@ def create_deployment(
         :func:`kubecustom.secret.MyData.get_namespace`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()  # Refresh credentials
 
@@ -52,7 +52,7 @@ def create_deployment(
         print(f"Deployment {deployment['metadata']['name']} created.")
 
 
-def delete_deployment(deployment_name, namespace=_namespace, verbose=True):
+def delete_deployment(deployment_name, namespace=None, verbose=True):
     """Delete a kubernetes deployment
 
     Args:
@@ -62,6 +62,8 @@ def delete_deployment(deployment_name, namespace=_namespace, verbose=True):
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     config.load_kube_config()
     client.AppsV1Api().delete_namespaced_deployment(
         name=deployment_name, namespace=namespace
@@ -70,7 +72,7 @@ def delete_deployment(deployment_name, namespace=_namespace, verbose=True):
         print(f"Deployment {deployment_name} deleted.")
 
 
-def get_deployment(deployment_name, namespace=_namespace):
+def get_deployment(deployment_name, namespace=None):
     """Get deployment object from Kubernetes API
 
     Args:
@@ -82,12 +84,14 @@ def get_deployment(deployment_name, namespace=_namespace):
         obj: ``kubernetes.client.models.v1_deployment.V1Deployment`` deployment object
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
     return apps_v1_api.read_namespaced_deployment(deployment_name, namespace)
 
 
-def get_deployments(namespace=_namespace):
+def get_deployments(namespace=None):
     """Get a list of active deployments in the namespace
 
     Args:
@@ -98,12 +102,14 @@ def get_deployments(namespace=_namespace):
         list: A list of kubernetes deployment objects ``kubernetes.client.models.v1_deployment.V1Deployment``
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
     return apps_v1_api.list_namespaced_deployment(namespace=namespace).items
 
 
-def get_deployment_info(deployment, namespace=_namespace):
+def get_deployment_info(deployment, namespace=None):
     """Get information about a deployment including the requested CPU usage
     the memory per replica, the number of replicas being used, and the name of
     the secret used.
@@ -122,6 +128,8 @@ def get_deployment_info(deployment, namespace=_namespace):
         - "replicas": (int) the number of replicas running
         - "secret_name": (str) the name of the secret used in this deployment
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     if isinstance(deployment, str):
         deployment = get_deployment(deployment, namespace=namespace)
@@ -184,7 +192,7 @@ def add_node_affinity(deployment, excluded_nodes):
     return deployment
 
 
-def utilization_per_deployment(keep_key="", namespace=_namespace, verbose=True):
+def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
     """Return the utilization of resources per deployment
 
     Args:
@@ -216,6 +224,8 @@ def utilization_per_deployment(keep_key="", namespace=_namespace, verbose=True):
 
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     deployments = get_deployments(namespace=namespace)
     deployment_info = {
         dep.metadata.name: get_deployment_info(dep, namespace=namespace)
@@ -236,50 +246,53 @@ def utilization_per_deployment(keep_key="", namespace=_namespace, verbose=True):
             "_____________________________________________________________________________"
         )
     for dep_name, pod_info in dep_pod_info.items():
-        cpu_usage = (
-            100
-            * np.array([x["cpu"] for _, x in pod_info.items()])
-            / deployment_info[dep_name]["cpu"]
-        )
-        memory_usage = (
-            100
-            * np.array([x["memory"] for _, x in pod_info.items()])
-            / deployment_info[dep_name]["memory"]
-        )
-        output[dep_name] = {
-            "replicas": deployment_info[dep_name]["replicas"],
-            "memory": {
-                "mean": np.mean(memory_usage),
-                "min": np.min(memory_usage),
-                "max": np.max(memory_usage),
-                "requested": deployment_info[dep_name]["memory"],
-                "array": memory_usage,
-            },
-            "cpu": {
-                "mean": np.mean(cpu_usage),
-                "min": np.min(cpu_usage),
-                "max": np.max(cpu_usage),
-                "requested": deployment_info[dep_name]["cpu"],
-                "array": cpu_usage,
-            },
-        }
-        if verbose:
-            print(
-                (
-                    f'{dep_name}\t{output[dep_name]["replicas"]}\t|\t'
-                    f'{output[dep_name]["memory"]["mean"]:.1f}\t{output[dep_name]["memory"]["min"]:.1f}\t'
-                    f'{output[dep_name]["memory"]["max"]:.1f}\t{output[dep_name]["memory"]["requested"]:.1f}\t|\t'
-                    f'{output[dep_name]["cpu"]["mean"]:.1f}\t{output[dep_name]["cpu"]["min"]:.1f}\t'
-                    f'{output[dep_name]["cpu"]["max"]:.1f}\t{output[dep_name]["cpu"]["requested"]}'
-                )
+        try:
+            cpu_usage = (
+                100
+                * np.array([x["cpu"] for _, x in pod_info.items()])
+                / deployment_info[dep_name]["cpu"]
             )
+            memory_usage = (
+                100
+                * np.array([x["memory"] for _, x in pod_info.items()])
+                / deployment_info[dep_name]["memory"]
+            )
+            output[dep_name] = {
+                "replicas": deployment_info[dep_name]["replicas"],
+                "memory": {
+                    "mean": np.mean(memory_usage),
+                    "min": np.min(memory_usage),
+                    "max": np.max(memory_usage),
+                    "requested": deployment_info[dep_name]["memory"],
+                    "array": memory_usage,
+                },
+                "cpu": {
+                    "mean": np.mean(cpu_usage),
+                    "min": np.min(cpu_usage),
+                    "max": np.max(cpu_usage),
+                    "requested": deployment_info[dep_name]["cpu"],
+                    "array": cpu_usage,
+                },
+            }
+            if verbose:
+                print(
+                    (
+                        f'{dep_name}\t{output[dep_name]["replicas"]}\t|\t'
+                        f'{output[dep_name]["memory"]["mean"]:.1f}\t{output[dep_name]["memory"]["min"]:.1f}\t'
+                        f'{output[dep_name]["memory"]["max"]:.1f}\t{output[dep_name]["memory"]["requested"]:.1f}\t|\t'
+                        f'{output[dep_name]["cpu"]["mean"]:.1f}\t{output[dep_name]["cpu"]["min"]:.1f}\t'
+                        f'{output[dep_name]["cpu"]["max"]:.1f}\t{output[dep_name]["cpu"]["requested"]}'
+                    )
+                )
+        except Exception:
+            warnings.warn(f"Could not calculate utilization for deployment: {dep_name}")
 
     if verbose:
         print("\n")
     return output
 
 
-def scale_deployment(deployment_name, replicas, namespace=_namespace, verbose=True):
+def scale_deployment(deployment_name, replicas, namespace=None, verbose=True):
     """Scale a deployment up or down, where if it is scaled down, the pods with lower CPU
     usage will be preferably deleted
 
@@ -290,6 +303,8 @@ def scale_deployment(deployment_name, replicas, namespace=_namespace, verbose=Tr
         :func:`kubecustom.secret.MyData.get_namespace`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
@@ -302,7 +317,9 @@ def scale_deployment(deployment_name, replicas, namespace=_namespace, verbose=Tr
             keep_key=deployment_name, warn_zero_use=False, namespace=namespace
         )
         pod_list = list(pod_dict.keys())
-        pod_list.sort(key=lambda x: pod_dict[x]["cpu"])
+        pod_list.sort(
+            key=lambda x: -np.inf if pod_dict[x]["cpu"] is None else pod_dict[x]["cpu"]
+        )
 
         for i in range(dep_info["replicas"] - replicas):
             delete_pod(pod_list[i], namespace=namespace)

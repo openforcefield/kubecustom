@@ -11,11 +11,7 @@ from .utils import convert_cpu_use, convert_memory_use, MyData
 
 try:
     MyDataInstance = MyData()
-    _namespace = MyDataInstance.get_namespace()
-    _container_name = MyDataInstance.get_container_name()
 except Exception:
-    _namespace = "default"
-    _container_name = "None"
     warnings.warn(
         "Could not import namespace or container_name, functions imported from this module may not operate as expected"
         " until you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from kubecustom"
@@ -23,7 +19,7 @@ except Exception:
     )
 
 
-def delete_pod(pod_name, namespace=_namespace, verbose=False):
+def delete_pod(pod_name, namespace=None, verbose=False):
     """Delete a Kubernetes pod
 
     Args:
@@ -32,7 +28,11 @@ def delete_pod(pod_name, namespace=_namespace, verbose=False):
         :func:`kubecustom.secret.MyData.get_namespace`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     core_v1_api = client.CoreV1Api()
+
     try:
         core_v1_api.delete_namespaced_pod(name=pod_name, namespace=namespace)
         if verbose:
@@ -45,7 +45,7 @@ def delete_pod(pod_name, namespace=_namespace, verbose=False):
             ApiException(f"Error deleting pod: {e}")
 
 
-def get_pod_list(deployment_name=None, namespace=_namespace):
+def get_pod_list(deployment_name=None, namespace=None):
     """Get a list of Kubernetes pod objects, optionally filtered by deployment.
 
     Args:
@@ -56,6 +56,8 @@ def get_pod_list(deployment_name=None, namespace=_namespace):
     Returns:
         list: List of Kubernetes pod objects ``kubernetes.client.models.v1_pod.V1Pod``
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()
     pods = client.CoreV1Api().list_namespaced_pod(namespace=namespace)
@@ -145,9 +147,7 @@ def sort_pods_by_deployment(pods, deployment_names, keep_key=""):
     return pods_sorted
 
 
-def delete_pods_by_status(
-    status, deployment_name=None, namespace=_namespace, verbose=False
-):
+def delete_pods_by_status(status, deployment_name=None, namespace=None, verbose=False):
     """Delete pods by their status
 
     Args:
@@ -158,6 +158,8 @@ def delete_pods_by_status(
         verbose (bool, optional): Print pod names as they are deleted. Defaults to True.
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     status_current = get_pods_status_info(
         namespace=namespace, deployment_name=deployment_name
     )
@@ -166,7 +168,7 @@ def delete_pods_by_status(
             delete_pod(pod_name, namespace=namespace, verbose=verbose)
 
 
-def get_pods_status_info(previous=False, deployment_name=None, namespace=_namespace):
+def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
     """Get status and IP address information for pods, optionally filtered by deployment.
 
     Args:
@@ -178,6 +180,8 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=_namesp
     Returns:
         list: List of Kubernetes pod objects ``kubernetes.client.models.v1_pod.V1Pod``
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     pods = get_pod_list(deployment_name=deployment_name, namespace=namespace)
     if not pods:
@@ -207,8 +211,8 @@ def get_pods_resource_info(
     keep_key="",
     warn_zero_use=True,
     verbose=False,
-    namespace=_namespace,
-    container_name=_container_name,
+    namespace=None,
+    container_name=None,
 ):
     """Output pods CPU and memory usage (GB) along with labels.
 
@@ -230,6 +234,13 @@ def get_pods_resource_info(
         - "memory": (float) Memory usage in GB
         - "labels": (dict) {label_type: label_value}
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    container_name = (
+        MyDataInstance.get_container_name()
+        if container_name is None
+        else container_name
+    )
 
     config.load_kube_config()
     api = client.CustomObjectsApi()
@@ -268,7 +279,7 @@ def get_pods_resource_info(
     return output
 
 
-def get_active_tasks(pod_list, verbose=True, namespace=_namespace):
+def get_active_tasks(pod_list, verbose=True, namespace=None):
     """Retrieve the number of active tasks from a list of pod objects
 
     Args:
@@ -281,38 +292,45 @@ def get_active_tasks(pod_list, verbose=True, namespace=_namespace):
         dict: Dictionary of pod names and the number of active tasks each pod has
     """
 
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     output = {}
     for pod in pod_list:
         pod_name = pod.metadata.name
-        log = (
-            client.CoreV1Api()
-            .read_namespaced_pod_log(
-                namespace=namespace,
-                name=pod_name,
+        try:
+            log = (
+                client.CoreV1Api()
+                .read_namespaced_pod_log(
+                    namespace=namespace,
+                    name=pod_name,
+                )
+                .split("\n")
             )
-            .split("\n")
-        )
 
-        for line in reversed(log):
-            if "active tasks" in line:
-                line_array = line.split()
-                tasks = int(line_array[-7])
-                output[pod_name] = tasks
-                if verbose:
-                    print(f"    Pod: {pod_name}, Number of Tasks {tasks}")
-                break
-            elif "new tasks" in line:
-                line_array = line.split()
-                tasks = int(line_array[-3])
-                output[pod_name] = tasks
-                if verbose:
-                    print(f"    Pod: {pod_name}, Number of Tasks {tasks} new")
-                break
+            for line in reversed(log):
+                if "active tasks" in line:
+                    line_array = line.split()
+                    tasks = int(line_array[-7])
+                    output[pod_name] = tasks
+                    if verbose:
+                        print(f"    Pod: {pod_name}, Number of Tasks {tasks}")
+                    break
+                elif "new tasks" in line:
+                    line_array = line.split()
+                    tasks = int(line_array[-3])
+                    output[pod_name] = tasks
+                    if verbose:
+                        print(f"    Pod: {pod_name}, Number of Tasks {tasks} new")
+                    break
+        except Exception:
+            output[pod_name] = None
+            if verbose:
+                print(f"    Pod: {pod_name}, Number of Tasks NA")
 
     return output
 
 
-def print_pods_summary(deployment_name=None, namespace=_namespace):
+def print_pods_summary(deployment_name=None, namespace=None):
     """Print a summary of pod status
 
     Args:
@@ -320,6 +338,9 @@ def print_pods_summary(deployment_name=None, namespace=_namespace):
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_namespace`.
     """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
     status_current = get_pods_status_info(
         deployment_name=deployment_name, namespace=namespace
     )

@@ -22,6 +22,9 @@ Import Functions
         get_active_tasks,
         delete_pods_by_status,
     )
+    from kubecustom import MyData
+    MyDataInstance = MyData()
+    user = MyDataInstance.get_user()
 
 Check Active Tasks in Pods
 --------------------------
@@ -29,10 +32,10 @@ Check Active Tasks in Pods
 .. code:: ipython3
 
     path = "/some/path/to/target/directory/394_pyddx-600"
-    user, tag, cpus, mem = "jac", "pyddx-600", 16, 32
-    deployment_name = f"openff-qca-qm-{user}-{tag}"
+    tag, cpus, mem = "pyddx-600", 16, 32
+    deployment_name = f"{user}-{tag}"
 
-    #create_secret_deployment(path, tag, user, cpus, mem, replicas=1)
+    #create_secret_deployment(path, tag, cpus, mem, replicas=1)
     #delete_secret_deployment(deployment_name)
     #scale_deployment(deployment_name, 10)
     #get_pods_resource_info(verbose=True, keep_key=tag);
