@@ -29,7 +29,7 @@ dependencies = [
 
 # Update the urls once the hosting is set up.
 [project.urls]
-"Source" = "https://github.com/jaclark5/kubecustom/"
+"Source" = "https://github.com/openforcefield/kubecustom/"
 "Documentation" = "https://kubecustom.readthedocs.io/"
 
 [project.optional-dependencies]

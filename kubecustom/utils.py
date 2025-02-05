@@ -80,7 +80,7 @@ def convert_memory_use(mem_usage):
         "M": 0.001,
         "k": 1e-6,
         "b": 1e-9,
-        "": 1 - 9,
+        "": 1e-9,
         "m": 9.3132257461548e-13,
     }
     mem_usage.replace(" ", "")

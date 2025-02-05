@@ -1,19 +1,21 @@
 KubeCustom
 ==============================
 [//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/jaclark5/kubecustom/workflows/CI/badge.svg)](https://github.com/jaclark5/kubecustom/actions?query=workflow%3ACI)
+[![GitHub Actions Build Status](https://github.com/openforcefield/kubecustom/workflows/CI/badge.svg)](https://github.com/openforcefield/kubecustom/actions?query=workflow%3ACI)
 [![Documentation Status](https://readthedocs.org/projects/kubecustom/badge/?version=latest)](https://kubecustom.readthedocs.io/en/latest/?badge=latest)
 <!--
-[![codecov](https://codecov.io/gh/jaclark5/kubecustom/branch/main/graph/badge.svg)](https://codecov.io/gh/jaclark5/kubecustom/branch/main)
+[![codecov](https://codecov.io/gh/openforcefield/kubecustom/branch/main/graph/badge.svg)](https://codecov.io/gh/openforcefield/kubecustom/branch/main)
 -->
 
 Kubernetes assessment  and combined control functions to handle multiple deployments.
+
+**This is a set of informal tools for internal use. We make no guarantees of versioning, functionality, or support.**
 
 ## Installation
 
 * Step 1: Download the main branch from our GitHub page as a zip file, or clone it to your working directory with:
 
-    ``git clone https://github.com/jaclark5/kubecustom``
+    ``git clone https://github.com/openforcefield/kubecustom``
 
 * Step 2 (Optional): If you are using conda and you want to create a new environment for this package you may install with:
 

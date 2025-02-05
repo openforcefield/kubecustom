@@ -132,7 +132,8 @@ class MyData:
         with open(_init_filename, "w") as f:
             for i, line in enumerate(_file_contents):
                 line_array = line.split()
-                line_array = [line_array[0], str(getattr(self, self._attributes[i]))]
+                attr = getattr(self, self._attributes[i])
+                line_array = [line_array[0], str(attr if attr is not None else "None")]
                 f.write(" ".join(line_array) + "\n")
 
     def get_username(self):

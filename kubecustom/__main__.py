@@ -7,7 +7,7 @@ from .utils import get_parser
 parser = get_parser()
 args = parser.parse_args()
 kwargs = {key: value for key, value in args.__dict__.items()}
-timelag = kwargs.pop("timelag")
+timelag = int(kwargs.pop("timelag"))
 
 
 def repeat_task(scheduler):

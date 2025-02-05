@@ -1,7 +1,7 @@
 """Create, delete, and extract information for pods"""
 
 import warnings
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
@@ -192,13 +192,17 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
     pod_info = {}
     for pod in pods:
         state, status, status_info = pod_state(pod, previous=previous)
+        try:
+            restart_count = pod.status.container_statuses[0].restart_count
+        except Exception:
+            restart_count = None
         pod_info[pod.metadata.name] = {
             "pod_name": pod.metadata.name,
             "node_name": pod.spec.node_name,
             "host_ip": pod.status.host_ip,
             "pod_ip": pod.status.pod_ip,
             "phase": pod.status.phase,
-            "restart_count": pod.status.container_statuses[0].restart_count,
+            "restart_count": restart_count,
             "state": state,
             "status": status,
             "status_info": status_info,
@@ -267,7 +271,7 @@ def get_pods_resource_info(
             if verbose:
                 print(
                     f"Pod: {pod_name}, Container: {container_name}, CPU: {container['usage']['cpu']} {cpu_usage},\t"
-                    "Memory: {container['usage']['memory']} {memory_usage}GB,\tLabels: {pod['metadata']['labels']}"
+                    f"Memory: {container['usage']['memory']} {memory_usage}GB,\tLabels: {pod['metadata']['labels']}"
                 )
 
             output[pod_name] = {
@@ -289,12 +293,15 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
         :func:`kubecustom.secret.MyData.get_namespace`.
 
     Returns:
-        dict: Dictionary of pod names and the number of active tasks each pod has
+        pod_tasks (dict): Dictionary of pod names and the number of active tasks each pod has
+        stats (dict): Dictionary of the number of tasks a pod could have, and the number of pods
+        in that state.
     """
 
     namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
-    output = {}
+    output = defaultdict(int)
+    stats = Counter()
     for pod in pod_list:
         pod_name = pod.metadata.name
         try:
@@ -312,22 +319,27 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
                     line_array = line.split()
                     tasks = int(line_array[-7])
                     output[pod_name] = tasks
+                    stats[tasks] += 1
                     if verbose:
                         print(f"    Pod: {pod_name}, Number of Tasks {tasks}")
                     break
-                elif "new tasks" in line:
-                    line_array = line.split()
-                    tasks = int(line_array[-3])
-                    output[pod_name] = tasks
-                    if verbose:
-                        print(f"    Pod: {pod_name}, Number of Tasks {tasks} new")
-                    break
+
+            if pod_name not in output:
+                output[pod_name] = None
+                stats["None Yet"] += 1
+                if verbose:
+                    print(f"    Pod: {pod_name}, Number of Tasks None Yet")
+
         except Exception:
+            stats[None] += 1
             output[pod_name] = None
             if verbose:
                 print(f"    Pod: {pod_name}, Number of Tasks NA")
 
-    return output
+    if verbose:
+        print(stats)
+
+    return output, stats
 
 
 def print_pods_summary(deployment_name=None, namespace=None):

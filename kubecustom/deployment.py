@@ -307,7 +307,6 @@ def scale_deployment(deployment_name, replicas, namespace=None, verbose=True):
     namespace = MyDataInstance.get_namespace() if namespace is None else namespace
 
     config.load_kube_config()
-    apps_v1_api = client.AppsV1Api()
 
     dep_info = get_deployment_info(deployment_name, namespace=namespace)
     if dep_info["replicas"] == replicas:
@@ -325,11 +324,13 @@ def scale_deployment(deployment_name, replicas, namespace=None, verbose=True):
             delete_pod(pod_list[i], namespace=namespace)
 
     try:
-        deployment = apps_v1_api.read_namespaced_deployment(deployment_name, namespace)
+        deployment = client.AppsV1Api().read_namespaced_deployment(
+            deployment_name, namespace
+        )
         deployment.spec.replicas = replicas
 
         # Apply the patch to update the deployment
-        apps_v1_api.patch_namespaced_deployment(
+        client.AppsV1Api().patch_namespaced_deployment(
             name=deployment_name, namespace=namespace, body=deployment
         )
 
