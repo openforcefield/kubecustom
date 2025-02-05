@@ -1,9 +1,9 @@
 KubeCustom
 ==============================
 [//]: # (Badges)
-[![GitHub Actions Build Status](https://github.com/openforcefield/kubecustom/workflows/CI/badge.svg)](https://github.com/openforcefield/kubecustom/actions?query=workflow%3ACI)
 [![Documentation Status](https://readthedocs.org/projects/kubecustom/badge/?version=latest)](https://kubecustom.readthedocs.io/en/latest/?badge=latest)
 <!--
+[![GitHub Actions Build Status](https://github.com/openforcefield/kubecustom/workflows/CI/badge.svg)](https://github.com/openforcefield/kubecustom/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/openforcefield/kubecustom/branch/main/graph/badge.svg)](https://codecov.io/gh/openforcefield/kubecustom/branch/main)
 -->
 
