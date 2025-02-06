@@ -324,14 +324,10 @@ def scale_deployment(deployment_name, replicas, namespace=None, verbose=True):
             delete_pod(pod_list[i], namespace=namespace)
 
     try:
-        deployment = client.AppsV1Api().read_namespaced_deployment(
-            deployment_name, namespace
-        )
-        deployment.spec.replicas = replicas
-
         # Apply the patch to update the deployment
+        patch_body = {"spec": {"replicas": replicas}}
         client.AppsV1Api().patch_namespaced_deployment(
-            name=deployment_name, namespace=namespace, body=deployment
+            name=deployment_name, namespace=namespace, body=patch_body
         )
 
         if verbose:
