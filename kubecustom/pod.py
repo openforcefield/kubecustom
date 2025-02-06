@@ -319,25 +319,22 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
                     line_array = line.split()
                     tasks = int(line_array[-7])
                     output[pod_name] = tasks
-                    stats[tasks] += 1
-                    if verbose:
-                        print(f"    Pod: {pod_name}, Number of Tasks {tasks}")
                     break
 
             if pod_name not in output:
-                output[pod_name] = None
-                stats["None Yet"] += 1
-                if verbose:
-                    print(f"    Pod: {pod_name}, Number of Tasks None Yet")
+                output[pod_name] = "None Yet"
 
         except Exception:
-            stats[None] += 1
             output[pod_name] = None
-            if verbose:
-                print(f"    Pod: {pod_name}, Number of Tasks NA")
+
+        stats[output[pod_name]] += 1
+        if verbose:
+            print(f"    Pod: {pod_name}, Number of Tasks {output[pod_name]}")
 
     if verbose:
-        print(stats)
+        print("Count of Number of Tasks: (Npods = 1 + Nreplicas)")
+        for task, count in stats.items():
+            print(f"    {task}: {count}")
 
     return output, stats
 
