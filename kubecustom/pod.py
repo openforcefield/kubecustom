@@ -299,7 +299,6 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
     """
 
     namespace = MyDataInstance.get_namespace() if namespace is None else namespace
-
     output = defaultdict(int)
     stats = Counter()
     for pod in pod_list:
@@ -332,9 +331,12 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
             print(f"    Pod: {pod_name}, Number of Tasks {output[pod_name]}")
 
     if verbose:
-        print("Count of Number of Tasks: (Npods = 1 + Nreplicas)")
+        print("Count of Number of Tasks")
         for task, count in stats.items():
             print(f"    {task}: {count}")
+        print(
+            f"Out of {len(pod_list)} pods. Note that some pods labeled as 'Not Yet' may not contribute to this count."
+        )
 
     return output, stats
 
