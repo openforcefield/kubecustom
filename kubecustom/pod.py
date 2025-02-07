@@ -1,5 +1,6 @@
 """Create, delete, and extract information for pods"""
 
+import time
 import warnings
 from collections import defaultdict, Counter
 
@@ -116,6 +117,45 @@ def pod_state(pod, previous=False):
         state, status, status_info = None, None, None
 
     return state, status, status_info
+
+
+def wait_for_pod_state(
+    pod_name,
+    status="Running",
+    namespace=None,
+    timeout=1000,
+    polling_interval=10,
+):
+    """Wait for pod to reach a certain status
+
+    Args:
+        pod_name (str): Name identifying pod
+        status (str, optional): Status of pod, as seen in ``kubectl get pods``. Defaults to "Running".
+        polling_interval (int, optional): Duration in seconds, between checks in pod status. Defaults to 10.
+        timeout (int, optional): Set time limit, in seconds, on how long to wait. Defaults to 1000.
+        namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
+        :func:`kubecustom.secret.MyData.get_namespace`.
+
+    Raises:
+        TimeoutError: Error if ``timeout`` limit has been reached.
+
+    Returns:
+        obj: Kubernetes pod object ``kubernetes.client.models.v1_pod.V1Pod``
+    """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+
+    config.load_kube_config()
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        pod = client.CoreV1Api().read_namespaced_pod(name=pod_name, namespace=namespace)
+        if pod.status.phase == status:
+            return pod
+        time.sleep(polling_interval)
+
+    raise TimeoutError(
+        f"Pod {pod_name} did not reach status {status} within {timeout} seconds."
+    )
 
 
 def sort_pods_by_deployment(pods, deployment_names, keep_key=""):

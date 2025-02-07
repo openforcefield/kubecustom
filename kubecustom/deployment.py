@@ -2,9 +2,14 @@
 
 import warnings
 import numpy as np
+import contextlib
+import time
+import traceback
 
 from kubernetes import client, config, utils
+from kubernetes.stream import portforward
 from kubernetes.client.exceptions import ApiException
+from websocket import WebSocketConnectionClosedException
 
 from .utils import (
     load_yaml,
@@ -13,7 +18,14 @@ from .utils import (
     convert_keys_to_camel_case,
     MyData,
 )
-from .pod import sort_pods_by_deployment, get_pods_resource_info, delete_pod
+from .pod import (
+    sort_pods_by_deployment,
+    get_pods_resource_info,
+    delete_pod,
+    get_pod_list,
+    wait_for_pod_state,
+)
+from .pvc import create_volume_mount
 
 try:
     MyDataInstance = MyData()
@@ -26,13 +38,14 @@ except Exception:
 
 
 def create_deployment(
-    deployment_yaml, excluded_nodes=None, namespace=None, verbose=True
+    deployment_yaml, excluded_nodes=None, args_pvc=(), namespace=None, verbose=True
 ):
     """Create a deployment from yaml file
 
     Args:
         deployment_yaml (str): Filename and path to yaml file
         excluded_nodes (list, optional): List of node names to exclude. Defaults to None.
+        args_pvc (tuple, optional): Arguments for :func:`kubecustom.pvc.create_volume_mount`
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_namespace`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
@@ -45,8 +58,20 @@ def create_deployment(
     # Create deployment
     deployment = load_yaml(deployment_yaml)
     deployment["metadata"]["namespace"] = namespace
+
+    if args_pvc:
+        volume_mount = create_volume_mount(
+            *args_pvc
+        )  # function that takes name and path
+        raise NotImplementedError(
+            f"The ability to support PVCs is not yet implemented. {volume_mount}"
+        )
+    #        create_volume_mount is equivalent of _to_volume_mount_k8s
+    #        missing: volume = ? need equivalent to _to_volume_k8s
+    #        both of these need to go into the deployment yaml
     if excluded_nodes is not None:
         deployment = add_node_affinity(deployment, excluded_nodes)
+
     utils.create_from_dict(client.ApiClient(), deployment)
     if verbose:
         print(f"Deployment {deployment['metadata']['name']} created.")
@@ -89,6 +114,66 @@ def get_deployment(deployment_name, namespace=None):
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
     return apps_v1_api.read_namespaced_deployment(deployment_name, namespace)
+
+
+@contextlib.contextmanager
+def forward_port(
+    deployment_name,
+    port=None,
+    timelag=5,
+    namespace=None,
+):
+    """
+    Forward a port from a Kubernetes deployment to the local machine.
+
+    This assumes that the deployment has at least one pod.
+
+    Args:
+        deployment_name (str): Name of deployment
+        port (int): Port to forward. Currently assumed that local and pod port are the same.
+        timelag (int, optional): Amount of time to wait in seconds before checking that the part connection is
+        established, Defaults to 5.
+        namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
+        :func:`kubecustom.secret.MyData.get_namespace`.
+    """
+
+    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    port = MyDataInstance.get_port() if port is None else port
+    local_port, pod_port = port, port
+
+    config.load_kube_config()
+
+    pods = get_pod_list(deployment_name=deployment_name, namespace=namespace)
+    pod_name = pods[0].metadata.name.split("_")[0]
+    print(f"Pod name: {pod_name}")
+
+    # Wait for the pod to be running
+    wait_for_pod_state(pod_name, namespace, status="Running")
+
+    # Setup Port Forwarding
+    path = f"/api/v1/namespaces/{namespace}/pods/{pod_name}/portforward"
+    host = config.kube_config.Configuration().host
+
+    # Initialize port forwarding
+    port_mapping = {local_port: pod_port}
+    time.sleep(timelag)
+    try:
+        # Establish port forwarding
+        pf = portforward.forward(host, path, port_mapping)
+        print(
+            f"Port forwarding established: localhost:{local_port} -> {pod_name}:{pod_port}"
+        )
+        pf.start()
+    except WebSocketConnectionClosedException as e:
+        raise RuntimeError(
+            f"Port forwarding connection failed: {str(e)}\n{traceback.format_exc()}"
+        )
+    except Exception as e:
+        raise RuntimeError(f"Unexpected Error: {str(e)}\n{traceback.format_exc()}")
+    finally:
+        if "pf" in locals():
+            pf.close()
+            print("Port forwarding process closed.")
 
 
 def get_deployments(namespace=None):
