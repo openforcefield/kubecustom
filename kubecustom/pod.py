@@ -66,7 +66,8 @@ def get_pod_list(deployment_name=None, namespace=None):
             pod
             for pod in pods.items
             if all(
-                owner.kind == "ReplicaSet" and owner.name.startswith(deployment_name)
+                owner.kind == "ReplicaSet"
+                and "-".join(owner.name.split("-")[:-1]) == deployment_name
                 for owner in pod.metadata.owner_references
             )
         ]
@@ -141,7 +142,9 @@ def sort_pods_by_deployment(pods, deployment_names, keep_key=""):
         if keep_key not in dep_name:
             continue
         pods_sorted[dep_name] = {
-            pod_name: value for pod_name, value in pods.items() if dep_name in pod_name
+            pod_name: value
+            for pod_name, value in pods.items()
+            if "-".join(pod_name.split("-")[:-2]) == dep_name
         }
 
     return pods_sorted

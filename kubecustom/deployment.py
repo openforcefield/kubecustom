@@ -243,7 +243,7 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
             " CPU Ut%, CPU Req"
         )
         print(
-            "_____________________________________________________________________________"
+            "_____________________________________________________________________________________________________"
         )
     for dep_name, pod_info in dep_pod_info.items():
         try:
