@@ -252,12 +252,14 @@ def get_pods_resource_info(
     group, version = "metrics.k8s.io", "v1beta1"
     resource = "pods"
 
+    pod_list = [pod.metadata.name for pod in get_pod_list(namespace=namespace)]
     pod_metrics = api.list_namespaced_custom_object(group, version, namespace, resource)
 
     # Process and display the metrics
     output = defaultdict(dict)
     for pod in pod_metrics["items"]:
         pod_name = pod["metadata"]["name"]
+        pod_list.remove(pod_name)
         if keep_key not in pod_name:
             continue
         containers = pod["containers"]
@@ -279,6 +281,19 @@ def get_pods_resource_info(
                 "memory": memory_usage,
                 "labels": pod["metadata"]["labels"],
             }
+
+    for pod_name in pod_list:
+        cpu_usage, memory_usage = None, None
+        if verbose:
+            print(
+                "Pod: {pod_name}, Container: None, CPU: None None,\tMemory: None None,\tLabels: None"
+            )
+
+        output[pod_name] = {
+            "cpu": cpu_usage,
+            "memory": memory_usage,
+            "labels": None,
+        }
 
     return output
 

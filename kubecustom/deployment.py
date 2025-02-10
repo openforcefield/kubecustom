@@ -249,12 +249,22 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
         try:
             cpu_usage = (
                 100
-                * np.array([x["cpu"] for _, x in pod_info.items()])
+                * np.array(
+                    [
+                        x["cpu"] if x["cpu"] is not None else 0
+                        for _, x in pod_info.items()
+                    ]
+                )
                 / deployment_info[dep_name]["cpu"]
             )
             memory_usage = (
                 100
-                * np.array([x["memory"] for _, x in pod_info.items()])
+                * np.array(
+                    [
+                        x["memory"] if x["memory"] is not None else 0
+                        for _, x in pod_info.items()
+                    ]
+                )
                 / deployment_info[dep_name]["memory"]
             )
             output[dep_name] = {
