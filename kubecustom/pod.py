@@ -387,10 +387,13 @@ def print_pods_summary(deployment_name=None, namespace=None):
     )
     for pod_name, current in status_current.items():
         if pod_resources[pod_name]:
-            print_str = (
-                f'{pod_name},\t{current["restart_count"]},\t{pod_resources[pod_name]["memory"]:.1f},\t'
-                f'{pod_resources[pod_name]["cpu"]:.1f}'
-            )
+            if pod_resources[pod_name]["memory"] is not None:
+                print_str = (
+                    f'{pod_name},\t{current["restart_count"]},\t{pod_resources[pod_name]["memory"]:.1f},\t'
+                    f'{pod_resources[pod_name]["cpu"]:.1f}'
+                )
+            else:
+                print_str = f'{pod_name},\t{current["restart_count"]},\tNone,\tNone'
         else:
             print_str = f'{pod_name},\t{current["restart_count"]},\tNone,\tNone'
         print(
