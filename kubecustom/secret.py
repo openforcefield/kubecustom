@@ -3,6 +3,7 @@
 import os
 import base64
 import warnings
+import yaml
 
 from InquirerPy import prompt
 from kubernetes import client, config
@@ -10,7 +11,7 @@ from kubernetes.client.exceptions import ApiException
 
 from pkg_resources import resource_filename
 
-_init_filename = resource_filename("kubecustom", "template_files/secret.txt")
+_init_filename = resource_filename("kubecustom", "template_files/config.yaml")
 
 questions = [
     {
@@ -55,7 +56,6 @@ questions = [
 
 
 class MyData:
-    # These are in the same order as lines in the secret.txt file
     _attributes = [
         "_username",
         "_password",
@@ -66,15 +66,52 @@ class MyData:
         "_cluster",
     ]
 
-    def __init__(self):
-        _file_contents = open(_init_filename, "r").readlines()
-        for i, attr in enumerate(self._attributes):
-            value = (
-                None
-                if _file_contents[i].split()[1] == "None"
-                else _file_contents[i].split()[1]
+    def __init__(self, config=None):
+        with open(_init_filename, "r") as f:
+            _contents_dict = yaml.safe_load(f)
+        config_names = list(_contents_dict.keys())
+
+        if len(config_names) == 0:
+            self._no_config(type="warning")
+
+        if config is None:
+            if len(config_names) > 1:
+                self.config = config_names[0]
+                print(
+                    f"Using configuration, {self.config}, of the options: {config_names}. Select an alternative with "
+                    "`MyData.set_config`"
+                )
+        else:
+            if config not in config_names:
+                raise ValueError(
+                    f"Configuration, {config}, cannot be found, choose one of the following: {config_names}"
+                )
+            config_dict = _contents_dict[config]
+
+        if not all(x in config_dict for x in self._attributes):
+            raise ValueError(
+                f"Configuration, {config}, must have the following values set {self._attributes}."
             )
-            setattr(self, attr, value)
+
+        self.config = config
+        for key, value in config_dict:
+            setattr(self, f"_{key}", value)
+
+    def _no_config(self, type="error"):
+        if type == "error":
+            raise ValueError(
+                "Configuration information cannot be found. Please set manually with `kubecustom.MyData.add_data()`"
+                " or interactively with `python -c 'from kubecustom import MyData; obj=MyData(); "
+                "obj.add_interactively()'`"
+            )
+        elif type == "warning":
+            warnings.warn(
+                "Configuration information cannot be found. Please set manually with `kubecustom.MyData.add_data()`"
+                " or interactively with `python -c 'from kubecustom import MyData; obj=MyData(); "
+                "obj.add_interactively()'`"
+            )
+        else:
+            raise ValueError("Type = {type} is not valid.")
 
     def add_data(
         self,
