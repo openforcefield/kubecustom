@@ -25,11 +25,11 @@ def delete_pod(pod_name, namespace=None, verbose=False):
     Args:
         pod_name (str): Name identifying pod
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     core_v1_api = client.CoreV1Api()
 
@@ -51,13 +51,13 @@ def get_pod_list(deployment_name=None, namespace=None):
     Args:
         deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
     Returns:
         list: List of Kubernetes pod objects ``kubernetes.client.models.v1_pod.V1Pod``
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()
     pods = client.CoreV1Api().list_namespaced_pod(namespace=namespace)
@@ -157,11 +157,11 @@ def delete_pods_by_status(status, deployment_name=None, namespace=None, verbose=
         status (str): Status of pod, as seen in ``kubectl get pods``
         deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
         verbose (bool, optional): Print pod names as they are deleted. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     status_current = get_pods_status_info(
         namespace=namespace, deployment_name=deployment_name
@@ -178,13 +178,13 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
         previous (bool, optional): Obtain previous pod state. Defaults to False.
         deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
     Returns:
         list: List of Kubernetes pod objects ``kubernetes.client.models.v1_pod.V1Pod``
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     pods = get_pod_list(deployment_name=deployment_name, namespace=namespace)
     if not pods:
@@ -230,9 +230,9 @@ def get_pods_resource_info(
         verbose (bool, optional): Print pods information as it's being generated, including the CPU and memory use
         before and after unit conversions. Defaults to False.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
         container_name (str, optional): Kubernetes container name used in your deployments. Defaults to
-        :func:`kubecustom.secret.MyData.get_container_name`.
+        :func:`kubecustom.secret.MyData.get_data("container_name")`.
 
     Returns:
         dict: Dictionary containing pod info where the keys are pod names, and the values are dictionaries containing:
@@ -242,9 +242,9 @@ def get_pods_resource_info(
         - "labels": (dict) {label_type: label_value}
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
     container_name = (
-        MyDataInstance.get_container_name()
+        MyDataInstance.get_data("container_name")
         if container_name is None
         else container_name
     )
@@ -308,7 +308,7 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
         pod_list (list): List of kubernetes pod objects
         verbose (bool, optional): Print pod names and number of active tasks. Defaults to True.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
     Returns:
         pod_tasks (dict): Dictionary of pod names and the number of active tasks each pod has
@@ -316,7 +316,7 @@ def get_active_tasks(pod_list, verbose=True, namespace=None):
         in that state.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
     output = defaultdict(int)
     stats = Counter()
     for pod in pod_list:
@@ -365,10 +365,10 @@ def print_pods_summary(deployment_name=None, namespace=None):
     Args:
         deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     status_current = get_pods_status_info(
         deployment_name=deployment_name, namespace=namespace

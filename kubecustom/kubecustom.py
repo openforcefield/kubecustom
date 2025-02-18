@@ -2,20 +2,13 @@
 
 import os
 import shutil
-import warnings
 
 from .utils import file_find_replace, load_template_paths
 from .secret import create_secret, delete_secret, MyData
 from .deployment import create_deployment, delete_deployment
 
-try:
-    MyDataInstance = MyData()
-except Exception:
-    warnings.warn(
-        "Could not import namespace or user strings, functions imported from this module may not operate as expected "
-        "until you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from kubecustom "
-        "import MyData; obj=MyData(); obj.add_interactively()'`"
-    )
+
+MyDataInstance = MyData()
 
 
 def create_secret_deployment(
@@ -40,19 +33,19 @@ def create_secret_deployment(
         cpus (int): Number of CPUs to use per replica (i.e., pod)
         memory (int): Number of GB of memory to request per replica
         user (str, optional): Initials of user, added to secret and deployment names for use as a 'keep_key' in other
-        functions. For example, 'my-organization-my-initials'. Defaults to :func:`kubecustom.secret.MyData.get_user`
+        functions. For example, 'my-organization-my-initials'. Defaults to :func:`kubecustom.secret.MyData.get_data```("user")``
         replicas (int, optional): Number of replicas (i.e., pods) to create. Defaults to 2.
         excluded_nodes (list, optional): List of node names to exclude. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
 
     Raises:
         ValueError: Check that target directory for jobs exists
     """
 
-    user = MyDataInstance.get_user() if user is None else user
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    user = MyDataInstance.get_data("user") if user is None else user
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     if not os.path.isdir(path):
         raise ValueError(f"Directory could not be found: {path}")
@@ -65,20 +58,20 @@ def create_secret_deployment(
     shutil.copyfile(template_manager, filename_manager)
 
     find_replace = {
-        "USER": MyDataInstance.get_user(),
+        "USER": MyDataInstance.get_data("user"),
         "TAG": tag,
         "CPUS": cpus,
         "MEMORY": memory,
         "REPLICAS": replicas,
-        "CONTAINERNAME": MyDataInstance.get_container_name(),
-        "CONTAINERIMAGE": MyDataInstance.get_container_image(),
+        "CONTAINERNAME": MyDataInstance.get_data("container_name"),
+        "CONTAINERIMAGE": MyDataInstance.get_data("container_image"),
     }
     file_find_replace(filename_deployment, find_replace)
 
     find_replace = {
-        "USERNAME": MyDataInstance.get_username(),
-        "PASSWORD": MyDataInstance.get_password(),
-        "CLUSTER": MyDataInstance.get_cluster(),
+        "USERNAME": MyDataInstance.get_data("username"),
+        "PASSWORD": MyDataInstance.get_data("password"),
+        "CLUSTER": MyDataInstance.get_data("cluster"),
         "CPUS": cpus,
         "MEMORY": memory,
         "TAG": tag,
@@ -103,10 +96,10 @@ def delete_secret_deployment(deployment_name, namespace=None, verbose=True):
     Args:
         deployment_name (str): Name of deployment and secret
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
     delete_secret(deployment_name, namespace=namespace, verbose=verbose)
     delete_deployment(deployment_name, namespace=namespace, verbose=verbose)
