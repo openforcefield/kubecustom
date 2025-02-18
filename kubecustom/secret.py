@@ -194,7 +194,7 @@ class MyData:
         else:
             raise ValueError("Type = {type} is not valid.")
 
-    def add_data(self, new_attributes=False, **kwargs):
+    def add_data(self, configuration_name=None, configuration_type=None, **kwargs):
         """Set configuration information manually, if it has already been initialized.
 
         Args:
@@ -202,10 +202,21 @@ class MyData:
 
         """
 
-        if self.configuration is None:
+        configuration_dict = self._get_configurations()
+        if configuration_name is None and self.configuration is None:
             self._no_config()
+        elif configuration_name is not None and self.configuration is not None:
+            self.set_configuration(configuration_name)
+        elif self.configuration is None and configuration_name in configuration_dict:
+            self.set_configuration(configuration_name)
+        elif self.configuration is None:
+            configuration_dict[configuration_name] = {}
+            self.configuration = configuration_name
+            configuration_dict[configuration_name]["configuration_type"] = (
+                configuration_type
+            )
+        configuration_dict = configuration_dict[self.configuration]
 
-        configuration_dict = self._get_configurations()[self.configuration]
         configuration_type = configuration_dict["configuration_type"]
         for key, value in kwargs.items():
             if key in self._attributes[configuration_type]:
@@ -231,28 +242,61 @@ class MyData:
 
     def add_interactively(self):
         """Spawn an interactive prompt to set personal information."""
-        print(
-            "Let's set your personal information locally. Hit 'enter' to skip and set to None."
+
+        print("Let's set your personal information locally")
+        configuration_dict = self._get_configurations()[self.configuration]
+        result_config_info = prompt(
+            [
+                {
+                    "type": "input",
+                    "message": f"Which configuration type do you want to set? {self._attributes.keys()}",
+                    "name": "configuration_type",
+                },
+                {
+                    "type": "input",
+                    "message": f"What would you to name the configuration? Exisitng configurations include: {configuration_dict.keys()}",
+                    "name": "configuration_name",
+                },
+            ]
         )
-        result = prompt(questions)
-        for key, value in result.items():
-            setattr(self, key, value)
+        if result_config_info["configuration_type"] not in self._attributes:
+            raise ValueError(
+                f"Configuration type, {result_config_info['configuration_type']}, is not supported. Must "
+                f"be one of the following {self._attributes}"
+            )
+        self.configuration = result_config_info["configuration_name"]
+        self._configuration_type = result_config_info["configuration_type"]
+
+        questions = [
+            {"type": "input", "name": name, "message": message}
+            for name, message in self._attributes[
+                result_config_info["configuration_type"]
+            ]
+        ]
+        result_config_data = prompt(questions)
+        for key, value in result_config_data.items():
+            setattr(self, f"_{key}", value)
 
         self._update_file()
 
     def _update_file(self):
+        """Update the secret.yaml file"""
+
         configuration_dict = self._get_configurations(self)
-        configuration_type = configuration_dict[self.configuration][
-            "configuration_type"
-        ]
-        for key in self._attributes[configuration_type].keys():
+        if self.configuration not in configuration_dict:
+            configuration_dict[self.configuration] = {}
+        if "configuration_type" not in configuration_dict[self.configuration]:
+            configuration_dict[self.configuration]["configuration_type"] = (
+                self._configuration_type
+            )
+
+        for key in self._attributes[self._configuration_type].keys():
             configuration_dict[self.configuration][key] = getattr(self, key)
         with open(_init_filename, "w") as f:
             yaml.dump(configuration_dict, f)
 
 
 # ___________________________________________________________________________________________________
-
 
 MyDataInstance = MyData()
 

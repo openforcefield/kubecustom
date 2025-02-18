@@ -5,6 +5,7 @@ __pycache__/
 
 # Secret file
 kubecustom/template_files/secret.txt
+kubecustom/template_files/secret.yaml
 
 # C extensions
 *.so
