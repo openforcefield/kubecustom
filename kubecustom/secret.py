@@ -4,72 +4,21 @@ import os
 import base64
 import warnings
 import yaml
+from pkg_resources import resource_filename
 
 from InquirerPy import prompt
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 
-from pkg_resources import resource_filename
-
 _init_filename = resource_filename("kubecustom", "template_files/config.yaml")
-
-questions = [
-    {
-        "type": "input",
-        "message": "What is your USERNAME for submission with a kubernetes secret?",
-        "name": "_username",
-    },
-    {
-        "type": "input",
-        "message": "What is your PASSWORD for submission with a kubernetes secret?",
-        "name": "_password",
-    },
-    {
-        "type": "input",
-        "message": (
-            "What string should represent your personal deployments/secrets (e.g., "
-            "'my-organization-my-initials')?"
-        ),
-        "name": "_user",
-    },
-    {
-        "type": "input",
-        "message": "What is your kubernetes namespace?",
-        "name": "_namespace",
-    },
-    {
-        "type": "input",
-        "message": "What would you like your kubernetes container name to be (e.g., 'my-org-pod')?",
-        "name": "_container_name",
-    },
-    {
-        "type": "input",
-        "message": "What GitHub image should be used to make containers? (e.g., ghcr.io/...)",
-        "name": "_container_image",
-    },
-    {
-        "type": "input",
-        "message": "What is the name of your kubernetes cluster?",
-        "name": "_cluster",
-    },
-]
+_config_type_filename = resource_filename(
+    "kubecustom", "template_files/template_keys.yaml"
+)
 
 
 class MyData:
-    _attributes = {
-        "qca": {  # config type
-            "username": "(str): Kubernetes username for secret. Defaults to None.",
-            "password": "(str): Kubernetes password for secret. Defaults to None.",
-            "user": (
-                "(str): YOUR personal identifier for deployments and secrets, e.g., "
-                "'my-organization-my-initials'. Defaults to None."
-            ),
-            "namespace": "(str): Your team namespace. Defaults to None.",
-            "container_name": "(str): Name for type of deployed containers. Defaults to None.",
-            "container_image": "(str): Link to container image, e.g., ghcr.io/...",
-            "cluster_name": "(str): Name of kubernetes cluster",
-        },
-    }
+    with open(_config_type_filename) as f:
+        _attributes = yaml.safe_load(f)
 
     def __init__(self, config=None):
         """Initialize MyData object, with or without an existing configuration
@@ -268,7 +217,7 @@ class MyData:
         self._configuration_type = result_config_info["configuration_type"]
 
         questions = [
-            {"type": "input", "name": name, "message": message}
+            {"type": "input", "name": name, "message": message[1]}
             for name, message in self._attributes[
                 result_config_info["configuration_type"]
             ]

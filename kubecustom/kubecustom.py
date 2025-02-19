@@ -1,14 +1,28 @@
 """Combined functions expected to be of most common use."""
 
 import os
+import yaml
 import shutil
+from pkg_resources import resource_filename
 
 from .utils import file_find_replace, load_template_paths
 from .secret import create_secret, delete_secret, MyData
 from .deployment import create_deployment, delete_deployment
 
 
+with open(resource_filename("kubecustom", "template_files/template_keys.yaml")) as f:
+    _attributes = yaml.safe_load(f)
+
 MyDataInstance = MyData()
+
+
+def get_deployment_name(tag):
+    """Get the deployment name using a provided tag, and values from an instance of ``MyData``.
+
+    Args:
+        tag (str): Tag used to identify tasks, if the github compute tag is "compute-pr000" this tag should be "pr000",
+        however if the mw feature is present, it might be "pr000-300"
+    """
 
 
 def create_secret_deployment(
@@ -46,39 +60,33 @@ def create_secret_deployment(
 
     user = MyDataInstance.get_data("user") if user is None else user
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
+    configuration_type = MyDataInstance.get_data("configuration_type")
 
     if not os.path.isdir(path):
         raise ValueError(f"Directory could not be found: {path}")
 
-    filename_deployment = os.path.join(path, "deployment.yaml")
-    filename_manager = os.path.join(path, "manager.yaml")
+    filename_deployment = os.path.join(path, f"deployment_{configuration_type}.yaml")
+    filename_manager = os.path.join(path, f"manager_{configuration_type}.yaml")
     template_deployment, template_manager = load_template_paths()
 
     shutil.copyfile(template_deployment, filename_deployment)
     shutil.copyfile(template_manager, filename_manager)
 
-    find_replace = {
-        "USER": MyDataInstance.get_data("user"),
-        "TAG": tag,
-        "CPUS": cpus,
-        "MEMORY": memory,
-        "REPLICAS": replicas,
-        "CONTAINERNAME": MyDataInstance.get_data("container_name"),
-        "CONTAINERIMAGE": MyDataInstance.get_data("container_image"),
-    }
-    file_find_replace(filename_deployment, find_replace)
+    deployment_name = get_deployment_name(tag)
 
-    find_replace = {
-        "USERNAME": MyDataInstance.get_data("username"),
-        "PASSWORD": MyDataInstance.get_data("password"),
-        "CLUSTER": MyDataInstance.get_data("cluster"),
-        "CPUS": cpus,
-        "MEMORY": memory,
-        "TAG": tag,
-    }
+    find_replace = {y[0]: x for x, y in _attributes[configuration_type].items()}
+    find_replace.update(
+        {
+            "DEPLOYMENTNAME": deployment_name,
+            "TAG": tag,
+            "CPUS": cpus,
+            "MEMORY": memory,
+            "REPLICAS": replicas,
+        }
+    )
+    file_find_replace(filename_deployment, find_replace)
     file_find_replace(filename_manager, find_replace)
 
-    deployment_name = f"{user}-{tag}"
     create_secret(
         filename_manager, deployment_name, namespace=namespace, verbose=verbose
     )
