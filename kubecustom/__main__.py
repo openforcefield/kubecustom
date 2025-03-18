@@ -1,5 +1,6 @@
 import sched
 import time
+import warnings
 
 from .deployment import utilization_per_deployment
 from .utils import get_parser
@@ -8,6 +9,10 @@ parser = get_parser()
 args = parser.parse_args()
 kwargs = {key: value for key, value in args.__dict__.items()}
 timelag = int(kwargs.pop("timelag"))
+
+silence = kwargs.pop("silence")
+if silence:
+    warnings.filterwarnings("ignore")
 
 
 def repeat_task(scheduler):
