@@ -12,6 +12,8 @@ kubecustom/template_files/secret.txt
 # VS Code
 .vscode/
 
+*.DS_Store
+
 # Distribution / packaging
 .Python
 env/

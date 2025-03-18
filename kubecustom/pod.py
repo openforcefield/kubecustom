@@ -134,7 +134,7 @@ def sort_pods_by_deployment(pods, deployment_names, keep_key=""):
     if not isinstance(pods, dict):
         raise ValueError("Expected a dictionary where the keys are pod names")
 
-    # Sort deployment names longest to shorted
+    # Sort deployment names longest to shortest
     # to ensure that a shorter name will not overlap with a longer name
     deployment_names.sort(key=lambda x: -len(x))
     pods_sorted = defaultdict(dict)
@@ -286,15 +286,14 @@ def get_pods_resource_info(
             }
 
     for pod_name in pod_list:
-        cpu_usage, memory_usage = None, None
         if verbose:
             print(
                 "Pod: {pod_name}, Container: None, CPU: None None,\tMemory: None None,\tLabels: None"
             )
 
         output[pod_name] = {
-            "cpu": cpu_usage,
-            "memory": memory_usage,
+            "cpu": None,
+            "memory": None,
             "labels": None,
         }
 
