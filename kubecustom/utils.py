@@ -228,5 +228,12 @@ def get_parser():
         default=20,
         help=("Time lag in seconds before updating. Defaults to 60"),
     )
+    parser.add_argument(
+        "-s",
+        "--silence",
+        dest="silence",
+        action="store_true",
+        help=("Whether to silence warnings. Defaults to False"),
+    )
 
     return parser

@@ -135,13 +135,14 @@ def get_deployment_info(deployment, namespace=None):
     memory = convert_memory_use(
         deployment.spec.template.spec.containers[0].resources.requests["memory"],
     )
-    secret = deployment.spec.template.spec.volumes[0].secret.secret_name
+    secret = deployment.spec.template.spec.volumes[0].secret
+    secret_name = secret.secret_name if secret is not None else None
 
     return {
         "cpu": cpus,
         "memory": memory,
         "replicas": n_replicas,
-        "secret_name": secret,
+        "secret_name": secret_name,
     }
 
 
