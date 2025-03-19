@@ -33,12 +33,12 @@ Setting Up Your Credentials
 
 Just like the set up of `kubectl` you'll need your `.kube/config` file in place.
 
-Kubecustom seeks to simpify your interaction with Kubernetes by using the python API
+Kubecustom seeks to simplify your interaction with Kubernetes by using the python API
 alternative to `kubectl`. Part of that process involves saving your information that is expected
 to be repetitively used. This includes your server username and password for secret files, your
 container names, container images, cluster name, user identifier string, and team namespace.
 See :class:`kubecustom.secret.MyData` for more information. In the process of installing
-`kubecustom`, a text file that will contain this information is created. `kubecustom` will not
+`kubecustom`, a yaml file that will contain this information is created. `kubecustom` will not
 operate normally until you've populated the file. This can be achieved in two ways:
 
 Using python scripting...
@@ -47,9 +47,10 @@ Using python scripting...
 >    from kubecustom import MyData
 >    MyDataInstance = MyData()
 >    MyDataInstance.add_data(
+>        configuration_name="my-config",
 >        username="myusername",
 >        password="mypassord",
->         user="my-org-my-initials",
+>        user="my-org-my-initials",
 >        namespace="myorgnamespace",
 >        container_name="my-org-pod",
 >        container_image="ghcr.io/...",

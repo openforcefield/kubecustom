@@ -213,7 +213,7 @@ class MyData:
                 },
                 {
                     "type": "input",
-                    "message": f"What would you to name the configuration? Exisitng configurations include: {configuration_dict.keys()}",
+                    "message": f"What would you to name the configuration? Existing configurations include: {configuration_dict.keys()}",
                     "name": "configuration_name",
                 },
             ]
