@@ -65,7 +65,8 @@ def get_pod_list(deployment_name=None, namespace=None):
         pods = [
             pod
             for pod in pods.items
-            if all(
+            if pod.metadata.owner_references is not None
+            and all(
                 owner.kind == "ReplicaSet"
                 and "-".join(owner.name.split("-")[:-1]) == deployment_name
                 for owner in pod.metadata.owner_references
