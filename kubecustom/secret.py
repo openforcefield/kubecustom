@@ -17,10 +17,11 @@ _config_type_filename = resource_filename(
 
 
 class MyData:
+    configuration = None
     with open(_config_type_filename) as f:
         _attributes = yaml.safe_load(f)
 
-    def __init__(self, config=None):
+    def __init__(self, configuration=None):
         """Initialize MyData object, with or without an existing configuration
 
         Args:
@@ -34,17 +35,17 @@ class MyData:
         if len(config_names) == 0:
             self._no_config(type="warning")
 
-        if config is None:
-            if len(config_names) > 0:
+        if configuration is None:
+            if MyData.configuration is None and len(config_names) > 0:
                 warnings.warn(
                     f"Using configuration, {config_names[0]}, of the options: {config_names}. Select an alternative with "
                     "`MyData.set_configuration`"
                 )
                 self.set_configuration(config_names[0])
-            else:
-                self.configuration = None
+            elif MyData.configuration is not None:
+                self.set_configuration(configuration=MyData.configuration)
         else:
-            self.set_configuration(config)
+            self.set_configuration(configuration=configuration)
 
     def _get_configurations(self):
         """Get the configurations from the configuration file
@@ -109,7 +110,7 @@ class MyData:
                 f"Configuration, {configuration}, must have the following values set {self._attributes.keys()}."
             )
 
-        self.configuration = configuration
+        MyData.configuration = configuration
         for key, value in configuration_dict[configuration].items():
             setattr(self, f"_{key}", value)
 
@@ -125,17 +126,17 @@ class MyData:
         Returns:
             *: Value from a configuration yaml file.
         """
-        if self.configuration is None:
+        if MyData.configuration is None:
             self._no_config()
 
         configuration_dict = self._get_configurations()
-        if value not in configuration_dict[self.configuration]:
+        if value not in configuration_dict[MyData.configuration]:
             raise ValueError(
-                f"The value for, {value}, is not defined for the configuration, {self.configuration}."
-                f"Must be one of: {configuration_dict[self.configuration].keys()}"
+                f"The value for, {value}, is not defined for the configuration, {MyData.configuration}."
+                f"Must be one of: {configuration_dict[MyData.configuration].keys()}"
             )
 
-        return configuration_dict[self.configuration][value]
+        return configuration_dict[MyData.configuration][value]
 
     def _no_config(self, type="error"):
         if type == "error":
@@ -162,19 +163,19 @@ class MyData:
         """
 
         configuration_dict = self._get_configurations()
-        if configuration_name is None and self.configuration is None:
+        if configuration_name is None and MyData.configuration is None:
             self._no_config()
-        elif configuration_name is not None and self.configuration is not None:
+        elif configuration_name is not None and MyData.configuration is not None:
             self.set_configuration(configuration_name)
-        elif self.configuration is None and configuration_name in configuration_dict:
+        elif MyData.configuration is None and configuration_name in configuration_dict:
             self.set_configuration(configuration_name)
-        elif self.configuration is None:
+        elif MyData.configuration is None:
             configuration_dict[configuration_name] = {}
-            self.configuration = configuration_name
+            MyData.configuration = configuration_name
             configuration_dict[configuration_name]["configuration_type"] = (
                 configuration_type
             )
-        configuration_dict = configuration_dict[self.configuration]
+        configuration_dict = configuration_dict[MyData.configuration]
 
         configuration_type = configuration_dict["configuration_type"]
         for key, value in kwargs.items():
@@ -193,7 +194,7 @@ class MyData:
 
         if len(missing_attr) > 0:
             raise ValueError(
-                f"Missing the attributes: {missing_attr}, for configuration, {self.configuration},"
+                f"Missing the attributes: {missing_attr}, for configuration, {MyData.configuration},"
                 f" of type, {configuration_type}."
             )
 
@@ -208,7 +209,7 @@ class MyData:
             [
                 {
                     "type": "input",
-                    "message": f"Which configuration type do you want to set? {self._attributes.keys()}",
+                    "message": f"Which configuration type do you want to set? {MyData._attributes.keys()}",
                     "name": "configuration_type",
                 },
                 {
@@ -229,7 +230,7 @@ class MyData:
                 f"Configuration name, {result_config_info['configuration_name']}, already exists. "
                 f"Choose a different name or update the existing configuration using ``MyData.add_data``."
             )
-        self.configuration = result_config_info["configuration_name"]
+        MyData.configuration = result_config_info["configuration_name"]
         self._configuration_type = result_config_info["configuration_type"]
 
         questions = [
@@ -248,15 +249,15 @@ class MyData:
         """Update the secret.yaml file"""
 
         configuration_dict = self._get_configurations()
-        if self.configuration not in configuration_dict:
-            configuration_dict[self.configuration] = {}
-        if "configuration_type" not in configuration_dict[self.configuration]:
-            configuration_dict[self.configuration]["configuration_type"] = (
+        if MyData.configuration not in configuration_dict:
+            configuration_dict[MyData.configuration] = {}
+        if "configuration_type" not in configuration_dict[MyData.configuration]:
+            configuration_dict[MyData.configuration]["configuration_type"] = (
                 self._configuration_type
             )
 
         for key in self._attributes[self._configuration_type].keys():
-            configuration_dict[self.configuration][key] = getattr(self, f"_{key}")
+            configuration_dict[MyData.configuration][key] = getattr(self, f"_{key}")
         with open(_init_filename, "w") as f:
             yaml.dump(configuration_dict, f)
 
