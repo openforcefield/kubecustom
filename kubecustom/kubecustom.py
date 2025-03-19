@@ -67,7 +67,7 @@ def create_secret_deployment(
         raise ValueError(f"Directory could not be found: {path}")
 
     filename_deployment = os.path.join(path, f"deployment_{configuration_type}.yaml")
-    filename_manager = os.path.join(path, f"manager_{configuration_type}.yaml")
+    filename_manager = os.path.join(path, "manager.yaml")
     template_deployment, template_manager = load_template_paths(configuration_type)
 
     shutil.copyfile(template_deployment, filename_deployment)
