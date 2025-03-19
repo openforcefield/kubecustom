@@ -61,11 +61,12 @@ class MyData:
 
         return _contents_dict
 
-    def set_configuration(self, configuration):
+    def set_configuration(self, configuration=None):
         """Set the configuration from those stored in the configuration yaml
 
         Args:
-            configuration (str): Configuration name representing a a set of settings
+            configuration (str, optional): Configuration name representing a a set of settings.
+            Defaults to None, in which case all the possible configurations are printed.
 
         Raises:
             ValueError: Configuration name cannot be found
@@ -73,7 +74,12 @@ class MyData:
         """
 
         configuration_dict = self._get_configurations()
-        if configuration not in configuration_dict:
+        if configuration is None:
+            print("Available configurations:")
+            for key in configuration_dict.keys():
+                print(f"  - {key}")
+            return
+        elif configuration not in configuration_dict:
             raise ValueError(
                 f"Configuration, {configuration}, cannot be found, choose one of the following:"
                 f" {configuration_dict.keys()}"
