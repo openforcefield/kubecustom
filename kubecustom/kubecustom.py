@@ -24,13 +24,16 @@ def get_deployment_name(tag):
         however if the mw feature is present, it might be "pr000-300"
     """
 
+    user = MyDataInstance.get_data("user")
+    configuration_name = MyDataInstance.configuration
+    return f"{user}-{configuration_name}-{tag}"
+
 
 def create_secret_deployment(
     path,
     tag,
     cpus,
     memory,
-    user=None,
     replicas=2,
     excluded_nodes=None,
     namespace=None,
@@ -46,7 +49,6 @@ def create_secret_deployment(
         however if the mw feature is present, it might be "pr000-300"
         cpus (int): Number of CPUs to use per replica (i.e., pod)
         memory (int): Number of GB of memory to request per replica
-        user (str, optional): Initials of user, added to secret and deployment names for use as a 'keep_key' in other
         functions. For example, 'my-organization-my-initials'. Defaults to :func:`kubecustom.secret.MyData.get_data```("user")``
         replicas (int, optional): Number of replicas (i.e., pods) to create. Defaults to 2.
         excluded_nodes (list, optional): List of node names to exclude. Defaults to None.
@@ -58,23 +60,25 @@ def create_secret_deployment(
         ValueError: Check that target directory for jobs exists
     """
 
-    user = MyDataInstance.get_data("user") if user is None else user
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
-    configuration_type = MyDataInstance.get_data("configuration_type")
+    configuration_type = MyDataInstance._configuration_type
 
     if not os.path.isdir(path):
         raise ValueError(f"Directory could not be found: {path}")
 
     filename_deployment = os.path.join(path, f"deployment_{configuration_type}.yaml")
     filename_manager = os.path.join(path, f"manager_{configuration_type}.yaml")
-    template_deployment, template_manager = load_template_paths()
+    template_deployment, template_manager = load_template_paths(configuration_type)
 
     shutil.copyfile(template_deployment, filename_deployment)
     shutil.copyfile(template_manager, filename_manager)
 
     deployment_name = get_deployment_name(tag)
 
-    find_replace = {y[0]: x for x, y in _attributes[configuration_type].items()}
+    find_replace = {
+        y[0]: MyDataInstance.get_data(x)
+        for x, y in _attributes[configuration_type].items()
+    }
     find_replace.update(
         {
             "DEPLOYMENTNAME": deployment_name,

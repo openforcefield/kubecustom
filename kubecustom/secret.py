@@ -36,7 +36,7 @@ class MyData:
 
         if config is None:
             if len(config_names) > 0:
-                print(
+                warnings.warn(
                     f"Using configuration, {config_names[0]}, of the options: {config_names}. Select an alternative with "
                     "`MyData.set_configuration`"
                 )
@@ -55,6 +55,10 @@ class MyData:
 
         with open(_init_filename, "r") as f:
             _contents_dict = yaml.safe_load(f)
+
+        if _contents_dict is None:
+            _contents_dict = {}
+
         return _contents_dict
 
     def set_configuration(self, configuration):
@@ -100,7 +104,7 @@ class MyData:
             )
 
         self.configuration = configuration
-        for key, value in configuration_dict[configuration]:
+        for key, value in configuration_dict[configuration].items():
             setattr(self, f"_{key}", value)
 
     def get_data(self, value):
@@ -193,7 +197,7 @@ class MyData:
         """Spawn an interactive prompt to set personal information."""
 
         print("Let's set your personal information locally")
-        configuration_dict = self._get_configurations()[self.configuration]
+        configuration_dict = self._get_configurations()
         result_config_info = prompt(
             [
                 {
@@ -208,10 +212,16 @@ class MyData:
                 },
             ]
         )
+
         if result_config_info["configuration_type"] not in self._attributes:
             raise ValueError(
                 f"Configuration type, {result_config_info['configuration_type']}, is not supported. Must "
                 f"be one of the following {self._attributes}"
+            )
+        if result_config_info["configuration_name"] in configuration_dict:
+            raise ValueError(
+                f"Configuration name, {result_config_info['configuration_name']}, already exists. "
+                f"Choose a different name or update the existing configuration using ``MyData.add_data``."
             )
         self.configuration = result_config_info["configuration_name"]
         self._configuration_type = result_config_info["configuration_type"]
@@ -220,7 +230,7 @@ class MyData:
             {"type": "input", "name": name, "message": message[1]}
             for name, message in self._attributes[
                 result_config_info["configuration_type"]
-            ]
+            ].items()
         ]
         result_config_data = prompt(questions)
         for key, value in result_config_data.items():
@@ -231,7 +241,7 @@ class MyData:
     def _update_file(self):
         """Update the secret.yaml file"""
 
-        configuration_dict = self._get_configurations(self)
+        configuration_dict = self._get_configurations()
         if self.configuration not in configuration_dict:
             configuration_dict[self.configuration] = {}
         if "configuration_type" not in configuration_dict[self.configuration]:
@@ -240,7 +250,7 @@ class MyData:
             )
 
         for key in self._attributes[self._configuration_type].keys():
-            configuration_dict[self.configuration][key] = getattr(self, key)
+            configuration_dict[self.configuration][key] = getattr(self, f"_{key}")
         with open(_init_filename, "w") as f:
             yaml.dump(configuration_dict, f)
 

@@ -1,4 +1,4 @@
-cluster: CLUSTER
+cluster: CLUSTERNAME
 loglevel: INFO
 update_frequency: 100.0
 parsl_run_dir: "/fscratch/parsl_run_dir"

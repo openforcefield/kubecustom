@@ -2,21 +2,21 @@ qca: # config type
     username:
         - "USERNAME"
         - "Kubernetes username for secret"
-    password":
-        - "PASSOWRD"
+    password:
+        - "PASSWORD"
         - "Kubernetes password for secret"
-    user":
+    user:
         - "USER"
         - "YOUR personal identifier for deployments and secrets, e.g., 'my-organization-my-initials'"
-    namespace":
+    namespace:
         - "NAMESPACE"
-        - "Your team namespace"
-    container_name":
+        - "Your team namespace (e.g., openforcefield)"
+    container_name:
         - "CONTAINERNAME"
-        - "Name for type of deployed containers"
-    container_image":
+        - "Name for type of deployed containers (e.g., 'openff-pod')"
+    container_image:
         - "CONTAINERIMAGE"
         - "Link to container image, e.g., ghcr.io/..."
-    cluster_name":
+    cluster_name:
         - "CLUSTERNAME"
         - "Name of kubernetes cluster"
