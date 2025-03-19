@@ -71,6 +71,29 @@ Check Active Tasks in Pods
     UserWarning: No CPU unit detected, assuming whole CPU.
       warnings.warn("No CPU unit detected, assuming whole CPU.")
 
+Use a Different Configuration
+-----------------------------
+
+Multiple configurations can be used. The configurations are stored and accessed in the `MyData` class. One can
+switch between them by calling `MyDataInstance.set_configuration(configuration="qca-psi4")` to switch to another
+configuration. Internally, `kubecustom` will use the configuration to determine the docker image and other settings.
+See :ref:`supported_configuration_types` for the template options.
+
+.. code:: ipython3
+
+    tag = "my-tag"
+
+    MyDataInstance.set_configuration(configuration="qca-psi4")
+    print(get_deployment_name(tag))
+
+    MyDataInstance.set_configuration(configuration="qca-xtb")
+    print(get_deployment_name(tag))
+
+
+.. parsed-literal::
+
+    openff-jac-qca-psi4-my-tag
+    openff-jac-qca-xtb-my-tag
 
 Get Pod CPU and Memory Usage
 ----------------------------
@@ -78,7 +101,7 @@ Get Pod CPU and Memory Usage
 .. code:: ipython3
 
     output = utilization_per_deployment(namespace="openforcefield", verbose=True,) # keep_key="pyddx")
-    # When containers are "waiting" their resources aren't counted... this means this plot shows higher utilizaiton than grafana
+    # When containers are "waiting" their resources aren't counted... this means this plot shows higher utilization than grafana
 
 
 .. parsed-literal::

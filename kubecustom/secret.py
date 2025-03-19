@@ -5,6 +5,7 @@ import base64
 import warnings
 import yaml
 from pkg_resources import resource_filename
+from pathlib import Path
 
 from InquirerPy import prompt
 from kubernetes import client, config
@@ -18,11 +19,10 @@ _config_type_filename = resource_filename(
 
 class MyData:
     configuration = None
-    with open(_config_type_filename) as f:
-        _attributes = yaml.safe_load(f)
+    _attributes = yaml.safe_load(Path(_config_type_filename).read_text())
 
     def __init__(self, configuration=None):
-        """Initialize MyData object, with or without an existing configuration
+        """Initialize MyData object, with or without an existing configuration.
 
         Args:
             config (str, optional): Name of configuration to choose. Defaults to None.
@@ -124,7 +124,7 @@ class MyData:
             ValueError: Configuration value was not found.
 
         Returns:
-            *: Value from a configuration yaml file.
+            \*: Value from a configuration yaml file.
         """
         if MyData.configuration is None:
             self._no_config()
@@ -155,9 +155,14 @@ class MyData:
             raise ValueError("Type = {type} is not valid.")
 
     def add_data(self, configuration_name=None, configuration_type=None, **kwargs):
-        """Set configuration information manually, if it has already been initialized.
+        """Create a new configuration or update an existing one.
+
+        See, :ref:`supported_configuration_types`, for the supported configuration types and
+        their required inputs.
 
         Args:
+            configuration_name (str, optional): Name of the configuration. Defaults to None.
+            configuration_type (str, optional): Type of configuration. Defaults to None.
             \*\*kwargs: Kwargs to add to the configuration, restricted to the type defined.
 
         """
