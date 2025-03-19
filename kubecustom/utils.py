@@ -7,9 +7,9 @@ import argparse
 
 from .secret import MyData
 
+MyDataInstance = MyData()
 try:
-    MyDataInstance = MyData()
-    _namespace = MyDataInstance.get_namespace()
+    _namespace = MyDataInstance.get_data("namespace")
 except Exception:
     _namespace = "default"
     warnings.warn(
@@ -141,16 +141,23 @@ def load_yaml(file_path):
     return dictionary
 
 
-def load_template_paths():
+def load_template_paths(configuration_type):
     """Return the paths to template deployment.yaml files and manager.yaml files
+
+    Args:
+        configuration_type (str): Configuration type for deployment and manager files
 
     Returns:
         deployment_yaml (str): Path to template deployment.yaml file
         manager_yaml (str): Path to template manager.yaml file
     """
     module_path = os.path.dirname(__file__)
-    deployment_path = os.path.join(module_path, "template_files", "deployment.yaml")
-    manager_path = os.path.join(module_path, "template_files", "manager.yaml")
+    deployment_path = os.path.join(
+        module_path, "template_files", f"deployment_{configuration_type}.yaml"
+    )
+    manager_path = os.path.join(
+        module_path, "template_files", f"manager_{configuration_type}.yaml"
+    )
     return deployment_path, manager_path
 
 
@@ -208,7 +215,7 @@ def get_parser():
         default="",
         help=(
             "A string in the deployment name to signify that it should be kept, such as a deployment name or your "
-            "kubecustom.MyData.get_user() string. Defaults to ''."
+            "kubecustom.MyData.get_data('user') string. Defaults to ''."
         ),
     )
     parser.add_argument(
@@ -218,7 +225,7 @@ def get_parser():
         default=_namespace,
         help=(
             "Kubernetes descriptor to indicate a set of team resources. Defaults to "
-            "`kubecustom.MyData.get_namespace()`"
+            "`kubecustom.MyData.get_data('namespace')`"
         ),
     )
     parser.add_argument(

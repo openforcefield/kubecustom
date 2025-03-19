@@ -15,14 +15,7 @@ from .utils import (
 )
 from .pod import sort_pods_by_deployment, get_pods_resource_info, delete_pod
 
-try:
-    MyDataInstance = MyData()
-except Exception:
-    warnings.warn(
-        "Could not import namespace, functions imported from this module may not operate as expected until "
-        "you set manually with 'kubecustom.MyData.add_data()' or interactively with `python -c 'from "
-        "kubecustom import MyData; obj=MyData(); obj.add_interactively()'`"
-    )
+MyDataInstance = MyData()
 
 
 def create_deployment(
@@ -34,11 +27,11 @@ def create_deployment(
         deployment_yaml (str): Filename and path to yaml file
         excluded_nodes (list, optional): List of node names to exclude. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()  # Refresh credentials
 
@@ -58,11 +51,11 @@ def delete_deployment(deployment_name, namespace=None, verbose=True):
     Args:
         deployment_name (str): Name of deployment
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()
     client.AppsV1Api().delete_namespaced_deployment(
@@ -78,13 +71,13 @@ def get_deployment(deployment_name, namespace=None):
     Args:
         deployment_name (str): Name of the deployment of a number of replica pods
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
 
     Returns:
         obj: ``kubernetes.client.models.v1_deployment.V1Deployment`` deployment object
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
@@ -96,13 +89,13 @@ def get_deployments(namespace=None):
 
     Args:
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
 
     Returns:
         list: A list of kubernetes deployment objects ``kubernetes.client.models.v1_deployment.V1Deployment``
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()
     apps_v1_api = client.AppsV1Api()
@@ -118,7 +111,7 @@ def get_deployment_info(deployment, namespace=None):
         deployment (str/obj): Name of the deployment of a number of replicas pods or a deployment class
         `kubernetes.client.models.v1_deployment.V1Deployment`
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
 
     Returns:
         dict: Dictionary containing deployment info containing:
@@ -129,7 +122,7 @@ def get_deployment_info(deployment, namespace=None):
         - "secret_name": (str) the name of the secret used in this deployment
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     if isinstance(deployment, str):
         deployment = get_deployment(deployment, namespace=namespace)
@@ -199,7 +192,7 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
     Args:
         keep_key (str, optional): A string in the deployment name to signify that it should be kept. Defaults to "".
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
 
     Returns:
@@ -225,7 +218,7 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
 
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     deployments = get_deployments(namespace=namespace)
     deployment_info = {
@@ -311,11 +304,11 @@ def scale_deployment(deployment_name, replicas, namespace=None, verbose=True):
         deployment_name (str): String signifying the deployment name
         replicas (int): Number of replicas to change it to
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
-        :func:`kubecustom.secret.MyData.get_namespace`.
+        :func:`kubecustom.secret.MyData.get_data```("namespace")``.
         verbose (bool, optional): If False the output will not print to screen. Defaults to True.
     """
 
-    namespace = MyDataInstance.get_namespace() if namespace is None else namespace
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
 
     config.load_kube_config()
 

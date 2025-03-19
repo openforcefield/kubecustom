@@ -14,3 +14,14 @@ or check out these examples of how to use in python scripting:
     :glob:
 
     examples/*
+
+.. _supported_configuration_types:
+
+Use a Different Configuration
+------------------------------
+
+Multiple configurations can be created from one of the following templates:
+
+.. literalinclude:: ../kubecustom/template_files/template_keys.yaml
+   :language: yaml
+   :caption: Supported Configuration Types

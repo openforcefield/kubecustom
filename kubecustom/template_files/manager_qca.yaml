@@ -1,0 +1,22 @@
+cluster: CLUSTERNAME
+loglevel: INFO
+update_frequency: 100.0
+parsl_run_dir: "/fscratch/parsl_run_dir"
+
+server:
+  fractal_uri: https://api.qcarchive.molssi.org
+  username: USERNAME
+  password: PASSWORD
+  verify: True
+
+executors:
+  local_executor:
+    type: local
+    max_workers: 1
+    cores_per_worker: CPUS
+    memory_per_worker: MEMORY # GB
+    scratch_directory: "/fscratch"
+    queue_tags:
+      - 'TAG'
+    environments:
+      use_manager_environment: True
