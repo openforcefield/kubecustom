@@ -168,7 +168,10 @@ def delete_pods_by_status(status, deployment_name=None, namespace=None, verbose=
         namespace=namespace, deployment_name=deployment_name
     )
     for pod_name, current in status_current.items():
-        if current["status"].lower() == status.lower():
+        current_status = (
+            "none" if current["status"] is None else current["status"].lower()
+        )
+        if current_status == status.lower():
             delete_pod(pod_name, namespace=namespace, verbose=verbose)
 
 
