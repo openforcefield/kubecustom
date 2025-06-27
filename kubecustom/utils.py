@@ -19,6 +19,20 @@ except Exception:
     )
 
 
+def repeat_task(scheduler, function, kwargs, timelag=60):
+    """Repeat a task given a timelag until stopped.
+
+    Args:
+        scheduler (sched.scheduler): An instance of Python's sched.scheduler, which schedules tasks to run at specific times.
+        function (Callable): Function to repeat
+        kwargs (dict): keyword arguments for ``function``.
+        timelag (int, optional): Time lag in seconds before updating. Defaults to 60
+
+    """
+    scheduler.enter(timelag, 1, repeat_task, (scheduler, function, kwargs, timelag))
+    function(**kwargs)
+
+
 def convert_cpu_use(cpu_usage, issue_warnings=True):
     """Take a string indicating CPU usage and output a float of
     whole number of CPUs used.
