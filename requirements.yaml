@@ -11,6 +11,7 @@ dependencies:
   - pyyaml
   - sphinx>2.1
   - docutils>=0.17
+  - InquirerPy
   - pre-commit
   - black
   - sphinx-design

@@ -175,6 +175,30 @@ def delete_pods_by_status(status, deployment_name=None, namespace=None, verbose=
             delete_pod(pod_name, namespace=namespace, verbose=verbose)
 
 
+def delete_pods_by_state(state, deployment_name=None, namespace=None, verbose=False):
+    """Delete pods by their status
+
+    Args:
+        state (str): State of pod, as seen in ``kubectl get pods``
+        deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
+        namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
+        verbose (bool, optional): Print pod names as they are deleted. Defaults to True.
+    """
+
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
+
+    status_current = get_pods_status_info(
+        namespace=namespace, deployment_name=deployment_name
+    )
+    for pod_name, current in status_current.items():
+        current_status = (
+            "none" if current["state"] is None else current["state"].lower()
+        )
+        if current_status == state.lower():
+            delete_pod(pod_name, namespace=namespace, verbose=verbose)
+
+
 def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
     """Get status and IP address information for pods, optionally filtered by deployment.
 
