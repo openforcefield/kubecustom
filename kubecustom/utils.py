@@ -247,7 +247,7 @@ def get_parser():
         "--timelag",
         dest="timelag",
         default=20,
-        help=("Time lag in seconds before updating. Defaults to 60"),
+        help=("Time lag in seconds before updating. Defaults to 20"),
     )
     parser.add_argument(
         "-s",
