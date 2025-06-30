@@ -49,7 +49,8 @@ def get_pod_list(deployment_name=None, namespace=None):
     """Get a list of Kubernetes pod objects, optionally filtered by deployment.
 
     Args:
-        deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
+        deployment_name (str or list, optional): Name of deployment or list of deployment names to
+        restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
@@ -58,6 +59,8 @@ def get_pod_list(deployment_name=None, namespace=None):
     """
 
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
+    if isinstance(deployment_name, str):
+        deployment_name = [deployment_name]
 
     config.load_kube_config()
     pods = client.CoreV1Api().list_namespaced_pod(namespace=namespace)
@@ -68,7 +71,7 @@ def get_pod_list(deployment_name=None, namespace=None):
             if pod.metadata.owner_references is not None
             and all(
                 owner.kind == "ReplicaSet"
-                and "-".join(owner.name.split("-")[:-1]) == deployment_name
+                and "-".join(owner.name.split("-")[:-1]) in deployment_name
                 for owner in pod.metadata.owner_references
             )
         ]
@@ -204,7 +207,8 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
 
     Args:
         previous (bool, optional): Obtain previous pod state. Defaults to False.
-        deployment_name (str, optional): Name of deployment to restrict pod list. Defaults to None.
+        deployment_name (str or list, optional): Name of deployment to restrict pod list, or list of deployment
+        names. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_data("namespace")`.
 

@@ -166,57 +166,56 @@ def update_pods_status_info(filename="pod_log.csv", keep_key="", namespace=None)
     if not os.path.isfile(filename):
         open(filename, "w").write(f"{', '.join(fields_new + fields_update)}\n")
 
-    for dep_name in deployment_names:
-        pods_info = get_pods_status_info(deployment_name=dep_name, namespace=namespace)
-        pod_names = set(pods_info.keys())
-        df = pd.read_csv(filename, skipinitialspace=True)
-        df_pod_names = set(df["pod_name"])
+    pods_info = get_pods_status_info(
+        deployment_name=deployment_names, namespace=namespace
+    )
+    pod_names = set(pods_info.keys())
+    df = pd.read_csv(filename, skipinitialspace=True)
+    df_pod_names = set(df["pod_name"])
 
-        # Pods in df but not in pod_names (to be removed and archived)
-        removed_pods = df_pod_names - pod_names
-        removed_rows = df[df["pod_name"].isin(removed_pods)]
-        df = df[~df["pod_name"].isin(removed_pods)]
-        if not removed_rows.empty:
-            removed_rows.to_csv(fname_complete, mode="a", header=False, index=False)
+    # Pods in df but not in pod_names (to be removed and archived)
+    removed_pods = df_pod_names - pod_names
+    removed_rows = df[df["pod_name"].isin(removed_pods)]
+    df = df[~df["pod_name"].isin(removed_pods)]
+    if not removed_rows.empty:
+        removed_rows.to_csv(fname_complete, mode="a", header=False, index=False)
 
-        # Pods in both df and pod_names (update fields_update)
-        shared_pods = df_pod_names & pod_names
-        for pod_name in shared_pods:
-            idx = df.index[df["pod_name"] == pod_name][0]
-            for field in fields_update:
-                if field == "deletion_timestamp":
-                    if pods_info[pod_name][field] is not None:
-                        df.at[idx, field] = pods_info[pod_name][field].strftime(
-                            "%Y-%m-%d %H:%M:%S %Z"
-                        )
-                    else:
-                        df.at[idx, field] = None
+    # Pods in both df and pod_names (update fields_update)
+    shared_pods = df_pod_names & pod_names
+    for pod_name in shared_pods:
+        idx = df.index[df["pod_name"] == pod_name][0]
+        for field in fields_update:
+            if field == "deletion_timestamp":
+                if pods_info[pod_name][field] is not None:
+                    df.at[idx, field] = pods_info[pod_name][field].strftime(
+                        "%Y-%m-%d %H:%M:%S %Z"
+                    )
                 else:
-                    df.at[idx, field] = pods_info[pod_name][field]
+                    df.at[idx, field] = None
+            else:
+                df.at[idx, field] = pods_info[pod_name][field]
 
-        # Pods in pod_names but not in df (add new rows)
-        new_pods = pod_names - df_pod_names
-        for pod_name in new_pods:
-            pod_info = pods_info[pod_name]
-            row = {
-                field: pod_info.get(field, "") for field in fields_new + fields_update
-            }
-            row["owner_references[0]['name']"] = pod_info["owner_references"][0]["name"]
-            row["creation_timestamp"] = pod_info["creation_timestamp"].strftime(
-                "%Y-%m-%d %H:%M:%S %Z"
-            )
-            new_row_df = pd.DataFrame([row])
-            if (
-                not new_row_df.empty
-                and new_row_df.notnull().any().any()
-                and len(new_row_df) >= 1
-            ):
-                if not df.empty and df.notnull().any().any() and len(df) >= 1:
-                    df = pd.concat([new_row_df, df], ignore_index=True)
-                else:
-                    df = new_row_df
+    # Pods in pod_names but not in df (add new rows)
+    new_pods = pod_names - df_pod_names
+    for pod_name in new_pods:
+        pod_info = pods_info[pod_name]
+        row = {field: pod_info.get(field, "") for field in fields_new + fields_update}
+        row["owner_references[0]['name']"] = pod_info["owner_references"][0]["name"]
+        row["creation_timestamp"] = pod_info["creation_timestamp"].strftime(
+            "%Y-%m-%d %H:%M:%S %Z"
+        )
+        new_row_df = pd.DataFrame([row])
+        if (
+            not new_row_df.empty
+            and new_row_df.notnull().any().any()
+            and len(new_row_df) >= 1
+        ):
+            if not df.empty and df.notnull().any().any() and len(df) >= 1:
+                df = pd.concat([new_row_df, df], ignore_index=True)
+            else:
+                df = new_row_df
 
-        df.to_csv(filename, index=False)
+    df.to_csv(filename, index=False)
 
 
 def monitor_pods(filename, keep_key="", timelag=20, namespace=None, silence=False):
