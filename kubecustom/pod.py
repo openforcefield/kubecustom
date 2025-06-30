@@ -49,7 +49,8 @@ def get_pod_list(deployment_name=None, namespace=None):
     """Get a list of Kubernetes pod objects, optionally filtered by deployment.
 
     Args:
-        deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
+        deployment_name (str or list, optional): Name of deployment or list of deployment names to
+        restrict pod list. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
@@ -58,6 +59,8 @@ def get_pod_list(deployment_name=None, namespace=None):
     """
 
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
+    if isinstance(deployment_name, str):
+        deployment_name = [deployment_name]
 
     config.load_kube_config()
     pods = client.CoreV1Api().list_namespaced_pod(namespace=namespace)
@@ -68,7 +71,7 @@ def get_pod_list(deployment_name=None, namespace=None):
             if pod.metadata.owner_references is not None
             and all(
                 owner.kind == "ReplicaSet"
-                and "-".join(owner.name.split("-")[:-1]) == deployment_name
+                and "-".join(owner.name.split("-")[:-1]) in deployment_name
                 for owner in pod.metadata.owner_references
             )
         ]
@@ -204,12 +207,44 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
 
     Args:
         previous (bool, optional): Obtain previous pod state. Defaults to False.
-        deployment_name (_type_, optional): Name of deployment to restrict pod list. Defaults to None.
+        deployment_name (str or list, optional): Name of deployment to restrict pod list, or list of deployment
+        names. Defaults to None.
         namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
         :func:`kubecustom.secret.MyData.get_data("namespace")`.
 
     Returns:
-        list: List of Kubernetes pod objects ``kubernetes.client.models.v1_pod.V1Pod``
+        dict: Per pod information, where each key is a pod name and each value is a dictionary with:
+
+         - "pod_name" (str): Name of the pod
+         - "namespace" (str): Namespace that the pod is in
+         - "labels" (dict[str]): Dictionary of labels associated with the pod
+         - "annotations" (dict[str]): Dictionary of annotations on the pod containing some ids and IPs
+         - "creation_timestamp" (datetime): Timestamp when the pod was created
+         - "deletion_timestamp" (datetime or None): Timestamp when the pod was deleted, or None if not deleted
+         - "uid" (str): Unique identifier for the pod
+         - "owner_references" (list[dict]): List of owner reference dictionaries for the pod
+         - "node_name" (str): Name of the node the pod is scheduled on
+         - "service_account" (str): Name of the service account used by the pod
+         - "priority" (int or None): Priority value of the pod
+         - "scheduler_name" (str): Name of the scheduler used for the pod
+         - "containers" (list[str]): List of container names in the pod
+         - "init_containers" (list[str]): List of init container names in the pod
+         - "volumes" (list[str]): List of volume names attached to the pod
+         - "host_ip" (str): IP address of the host node
+         - "pod_ip" (str): IP address assigned to the pod
+         - "phase" (str): Current phase of the pod (e.g., Running, Pending)
+         - "restart_count" (int or None): Number of times the main container has restarted
+         - "state" (str or None): State of the pod ("running", "waiting", "terminated", or None)
+         - "status" (str or None): Status reason for the current state
+         - "status_info" (dict or None): Additional information about the pod status
+         - "start_time" (datetime or None): Time when the pod started
+         - "container_statuses" (list[dict]): List of container status dictionaries
+         - "init_container_statuses" (list[dict]): List of init container status dictionaries
+         - "conditions" (list[dict]): List of condition dictionaries for the pod
+         - "qos_class" (str or None): Quality of Service class assigned to the pod
+         - "message" (str or None): Message about the pod's status, if any
+         - "reason" (str or None): Reason for the pod's current condition, if any
+
     """
 
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
@@ -224,12 +259,30 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
     for pod in pods:
         state, status, status_info = pod_state(pod, previous=previous)
         try:
-            restart_count = pod.status.container_statuses[0].restart_count
+            restart_count = pod.status.container_statuses[0]["restart_count"]
         except Exception:
             restart_count = None
+
         pod_info[pod.metadata.name] = {
             "pod_name": pod.metadata.name,
+            "namespace": pod.metadata.namespace,
+            "labels": pod.metadata.labels,
+            "annotations": pod.metadata.annotations,
+            "creation_timestamp": pod.metadata.creation_timestamp,
+            "deletion_timestamp": pod.metadata.deletion_timestamp,
+            "uid": pod.metadata.uid,
+            "owner_references": [
+                owner.to_dict() for owner in (pod.metadata.owner_references or [])
+            ],
             "node_name": pod.spec.node_name,
+            "service_account": pod.spec.service_account_name,
+            "priority": pod.spec.priority,
+            "scheduler_name": pod.spec.scheduler_name,
+            "containers": [container.name for container in pod.spec.containers],
+            "init_containers": [
+                container.name for container in (pod.spec.init_containers or [])
+            ],
+            "volumes": [volume.name for volume in (pod.spec.volumes or [])],
             "host_ip": pod.status.host_ip,
             "pod_ip": pod.status.pod_ip,
             "phase": pod.status.phase,
@@ -237,6 +290,17 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
             "state": state,
             "status": status,
             "status_info": status_info,
+            "start_time": pod.status.start_time,
+            "container_statuses": [
+                cs.to_dict() for cs in (pod.status.container_statuses or [])
+            ],
+            "init_container_statuses": [
+                cs.to_dict() for cs in (pod.status.init_container_statuses or [])
+            ],
+            "conditions": [cond.to_dict() for cond in (pod.status.conditions or [])],
+            "qos_class": getattr(pod.status, "qos_class", None),
+            "message": getattr(pod.status, "message", None),
+            "reason": getattr(pod.status, "reason", None),
         }
 
     return pod_info

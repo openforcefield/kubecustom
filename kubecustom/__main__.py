@@ -3,7 +3,7 @@ import time
 import warnings
 
 from .deployment import utilization_per_deployment
-from .utils import get_parser
+from .utils import get_parser, repeat_task
 
 parser = get_parser()
 args = parser.parse_args()
@@ -14,13 +14,9 @@ silence = kwargs.pop("silence")
 if silence:
     warnings.filterwarnings("ignore")
 
-
-def repeat_task(scheduler):
-    scheduler.enter(timelag, 1, repeat_task, (scheduler,))
-    utilization_per_deployment(**kwargs)
-
-
 utilization_per_deployment(**kwargs)
 my_scheduler = sched.scheduler(time.time, time.sleep)
-my_scheduler.enter(timelag, 1, repeat_task, (my_scheduler,))
+my_scheduler.enter(
+    timelag, 1, repeat_task, (my_scheduler, utilization_per_deployment, kwargs, timelag)
+)
 my_scheduler.run()
