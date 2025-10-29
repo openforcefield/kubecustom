@@ -16,7 +16,7 @@ executors:
     cores_per_worker: CPUS
     memory_per_worker: MEMORY # GB
     scratch_directory: "/fscratch"
-    queue_tags:
+    compute_tags:
       - 'TAG'
     environments:
       use_manager_environment: True
