@@ -259,7 +259,7 @@ def get_pods_status_info(previous=False, deployment_name=None, namespace=None):
     for pod in pods:
         state, status, status_info = pod_state(pod, previous=previous)
         try:
-            restart_count = pod.status.container_statuses[0]["restart_count"]
+            restart_count = pod.status.container_statuses[0].restart_count
         except Exception:
             restart_count = None
 
