@@ -155,16 +155,32 @@ def sort_pods_by_deployment(pods, deployment_names, keep_key=""):
 
         # Some workloads encode a trailing token in deployment names that is
         # replaced or truncated in pod names. If strict matching finds no pods,
-        # fall back to matching on the deployment name without its last token.
+        # fall back to matching on the deployment name without its last token,
+        # but only if no other deployment shares the same stripped prefix
+        # (otherwise pods from sibling deployments would be incorrectly merged).
         if not pods_for_dep and "-" in dep_name:
             dep_prefix = dep_name.rsplit("-", 1)[0]
-            pods_for_dep = {
-                pod_name: value
-                for pod_name, value in pods.items()
-                if pod_name.startswith(dep_prefix)
-                and len(pod_name) > len(dep_prefix)
-                and pod_name[len(dep_prefix)] == "-"
-            }
+            sibling_deps = [
+                other
+                for other in deployment_names
+                if other != dep_name
+                and keep_key in other
+                and other.rsplit("-", 1)[0] == dep_prefix
+            ]
+            if sibling_deps:
+                warnings.warn(
+                    f"Could not uniquely match pods for deployment '{dep_name}': "
+                    f"multiple deployments share the prefix '{dep_prefix}' after name truncation. "
+                    f"Deployment names may be too long for Kubernetes pod name limits."
+                )
+            else:
+                pods_for_dep = {
+                    pod_name: value
+                    for pod_name, value in pods.items()
+                    if pod_name.startswith(dep_prefix)
+                    and len(pod_name) > len(dep_prefix)
+                    and pod_name[len(dep_prefix)] == "-"
+                }
 
         pods_sorted[dep_name] = pods_for_dep
 

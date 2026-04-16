@@ -37,6 +37,14 @@ def create_deployment(
 
     # Create deployment
     deployment = load_yaml(deployment_yaml)
+    dep_name = deployment["metadata"]["name"]
+    if len(dep_name) > 40:
+        raise ValueError(
+            f"Deployment name '{dep_name}' is {len(dep_name)} characters long. "
+            f"Kubernetes pod names are derived from the deployment name with an appended "
+            f"replica set hash and pod hash, which would exceed the 63-character DNS label"
+            "limit. Please shorten the deployment name to 40 characters or fewer."
+        )
     deployment["metadata"]["namespace"] = namespace
     if excluded_nodes is not None:
         deployment = add_node_affinity(deployment, excluded_nodes)
