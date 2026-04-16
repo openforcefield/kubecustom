@@ -241,6 +241,11 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
         )
     for dep_name, pod_info in dep_pod_info.items():
         try:
+            if len(pod_info) == 0:
+                warnings.warn(
+                    f"Could not calculate utilization for deployment: {dep_name} (no matching pods found)"
+                )
+                continue
             cpu_usage = (
                 100
                 * np.array(
@@ -288,8 +293,10 @@ def utilization_per_deployment(keep_key="", namespace=None, verbose=True):
                         f'{output[dep_name]["cpu"]["max"]:.1f}\t{output[dep_name]["cpu"]["requested"]}'
                     )
                 )
-        except Exception:
-            warnings.warn(f"Could not calculate utilization for deployment: {dep_name}")
+        except Exception as e:
+            warnings.warn(
+                f"Could not calculate utilization for deployment: {dep_name} \n({e})"
+            )
 
     if verbose:
         print("\n")

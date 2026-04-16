@@ -145,11 +145,28 @@ def sort_pods_by_deployment(pods, deployment_names, keep_key=""):
     for dep_name in deployment_names:
         if keep_key not in dep_name:
             continue
-        pods_sorted[dep_name] = {
+        pods_for_dep = {
             pod_name: value
             for pod_name, value in pods.items()
-            if "-".join(pod_name.split("-")[:-2]) == dep_name
+            if pod_name.startswith(dep_name)
+            and len(pod_name) > len(dep_name)
+            and pod_name[len(dep_name)] == "-"
         }
+
+        # Some workloads encode a trailing token in deployment names that is
+        # replaced or truncated in pod names. If strict matching finds no pods,
+        # fall back to matching on the deployment name without its last token.
+        if not pods_for_dep and "-" in dep_name:
+            dep_prefix = dep_name.rsplit("-", 1)[0]
+            pods_for_dep = {
+                pod_name: value
+                for pod_name, value in pods.items()
+                if pod_name.startswith(dep_prefix)
+                and len(pod_name) > len(dep_prefix)
+                and pod_name[len(dep_prefix)] == "-"
+            }
+
+        pods_sorted[dep_name] = pods_for_dep
 
     return pods_sorted
 
