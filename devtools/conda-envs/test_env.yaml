@@ -6,6 +6,9 @@ dependencies:
     # Base depends
   - python
   - pip
+  - numpy
+  - pyyaml
+  - inquirerpy
 
     # Testing
   - pytest
@@ -13,6 +16,6 @@ dependencies:
   - codecov
 
     # Pip-only installs
-  #- pip:
-  #  - codecov
-
+  - pip:
+    - codecov
+    - kubernetes

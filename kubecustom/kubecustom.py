@@ -7,7 +7,7 @@ import os
 import yaml
 import shutil
 import pandas as pd
-from pkg_resources import resource_filename
+from importlib.resources import files
 
 from .utils import file_find_replace, load_template_paths, repeat_task
 from .secret import create_secret, delete_secret, MyData
@@ -15,7 +15,7 @@ from .deployment import create_deployment, delete_deployment, get_deployments
 from .pod import get_pods_status_info
 
 
-with open(resource_filename("kubecustom", "template_files/template_keys.yaml")) as f:
+with files("kubecustom").joinpath("template_files/template_keys.yaml").open("r") as f:
     _attributes = yaml.safe_load(f)
 
 MyDataInstance = MyData()

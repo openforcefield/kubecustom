@@ -4,22 +4,21 @@ import os
 import base64
 import warnings
 import yaml
-from pkg_resources import resource_filename
-from pathlib import Path
+from importlib.resources import files
 
 from InquirerPy import prompt
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 
-_init_filename = resource_filename("kubecustom", "template_files/config.yaml")
-_config_type_filename = resource_filename(
-    "kubecustom", "template_files/template_keys.yaml"
+_init_filename = files("kubecustom").joinpath("template_files/config.yaml")
+_config_type_filename = files("kubecustom").joinpath(
+    "template_files/template_keys.yaml"
 )
 
 
 class MyData:
     configuration = None
-    _attributes = yaml.safe_load(Path(_config_type_filename).read_text())
+    _attributes = yaml.safe_load(_config_type_filename.read_text())
 
     def __init__(self, configuration=None):
         """Initialize MyData object, with or without an existing configuration.
@@ -124,7 +123,7 @@ class MyData:
             ValueError: Configuration value was not found.
 
         Returns:
-            \*: Value from a configuration yaml file.
+            \\*: Value from a configuration yaml file.
         """
         if MyData.configuration is None:
             self._no_config()
@@ -163,7 +162,7 @@ class MyData:
         Args:
             configuration_name (str, optional): Name of the configuration. Defaults to None.
             configuration_type (str, optional): Type of configuration. Defaults to None.
-            \*\*kwargs: Kwargs to add to the configuration, restricted to the type defined.
+            \\*\\*kwargs: Kwargs to add to the configuration, restricted to the type defined.
 
         """
 
