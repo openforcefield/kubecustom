@@ -136,6 +136,23 @@ def convert_memory_use(mem_usage):
     return mem_float
 
 
+def text_find_replace(text, replace_dict):
+    """Find keywords in a string and replace with new_words
+
+    Args:
+        text (str): Contents in which to find and replace
+        replace_dict (dict): A dictionary whose keys are strings to find
+        in the text and the values are the strings to replace it with.
+
+    Returns:
+        str: The text with all replacements made
+    """
+
+    for old_word, new_word in replace_dict.items():
+        text = text.replace(str(old_word), str(new_word))
+    return text
+
+
 def file_find_replace(filename, replace_dict):
     """Find keywords and replace with new_words
 
@@ -149,9 +166,7 @@ def file_find_replace(filename, replace_dict):
     with open(filename, "r") as file:
         filedata = file.read()
 
-    # Replace the target string
-    for old_word, new_word in replace_dict.items():
-        filedata = filedata.replace(str(old_word), str(new_word))
+    filedata = text_find_replace(filedata, replace_dict)
 
     # Write the file out again
     with open(filename, "w") as file:

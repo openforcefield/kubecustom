@@ -4,13 +4,24 @@ import sched
 import time
 import warnings
 import os
+import pathlib
 import yaml
 import shutil
 import pandas as pd
 from importlib.resources import files
 
-from .utils import file_find_replace, load_template_paths, repeat_task
-from .secret import create_secret, delete_secret, MyData
+from .utils import (
+    file_find_replace,
+    text_find_replace,
+    load_template_paths,
+    repeat_task,
+)
+from .secret import (
+    create_secret_from_content,
+    delete_secret,
+    MyData,
+    _ENV_VAR_KEYS as _CREDENTIAL_KEYS,
+)
 from .deployment import create_deployment, delete_deployment, get_deployments
 from .pod import get_pods_status_info
 
@@ -49,7 +60,9 @@ def create_secret_deployment(
     Deployment names will be f"{user}-{tag}"
 
     Args:
-        path (str): Path to which template development.yaml and manager.yaml files will be saves
+        path (str): Path to which template deployment.yaml and manager.yaml files will be saved. The saved
+        manager.yaml has its username and password redacted; the real credentials are sent directly to the
+        secret and never written to disk.
         tag (str): Tag used to identify tasks, if the github compute tag is "compute-pr000" this tag should be "pr000",
         however if the mw feature is present, it might be "pr000-300"
         cpus (int): Number of CPUs to use per replica (i.e., pod)
@@ -76,7 +89,6 @@ def create_secret_deployment(
     template_deployment, template_manager = load_template_paths(configuration_type)
 
     shutil.copyfile(template_deployment, filename_deployment)
-    shutil.copyfile(template_manager, filename_manager)
 
     deployment_name = get_deployment_name(tag)
 
@@ -94,10 +106,27 @@ def create_secret_deployment(
         }
     )
     file_find_replace(filename_deployment, find_replace)
-    file_find_replace(filename_manager, find_replace)
 
-    create_secret(
-        filename_manager, deployment_name, namespace=namespace, verbose=verbose
+    # The manager contains credentials: render it in memory and send it straight to the secret.
+    # Only a redacted copy is saved to disk, as a record of what was submitted.
+    template_text = pathlib.Path(template_manager).read_text()
+    redacted = {
+        **find_replace,
+        **{
+            _attributes[configuration_type][key][0]: "***"
+            for key in _CREDENTIAL_KEYS
+            if key in _attributes[configuration_type]
+        },
+    }
+    with open(filename_manager, "w") as f:
+        f.write(text_find_replace(template_text, redacted))
+
+    create_secret_from_content(
+        text_find_replace(template_text, find_replace),
+        deployment_name,
+        "manager.yaml",
+        namespace=namespace,
+        verbose=verbose,
     )
     create_deployment(
         filename_deployment,

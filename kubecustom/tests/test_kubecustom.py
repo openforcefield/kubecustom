@@ -115,3 +115,36 @@ def test_credentials_must_be_environment_variable_names():
     _check_env_var_name("password", "NRP_PASSWORD")
     with pytest.raises(ValueError, match="name of an environment variable"):
         _check_env_var_name("password", "my pass!word")
+
+
+def test_create_secret_deployment_keeps_credentials_off_disk(monkeypatch, tmp_path):
+    import kubecustom.kubecustom as kc
+
+    captured = {}
+    monkeypatch.setattr(
+        kc,
+        "create_secret_from_content",
+        lambda content, name, key, **kw: captured.update(content=content, key=key),
+    )
+    monkeypatch.setattr(kc, "create_deployment", lambda *a, **kw: None)
+    monkeypatch.setattr(kc, "get_deployment_name", lambda tag: "dummy-deployment")
+    dummy = {
+        "configuration_type": "qca",
+        "username": "dummy-user",
+        "password": "dummy-password",
+        "user": "dummy-org",
+        "namespace": "dummy-ns",
+        "container_name": "dummy-pod",
+        "container_image": "dummy-image",
+        "cluster_name": "dummy-cluster",
+    }
+    monkeypatch.setattr(kc.MyDataInstance, "get_data", lambda value: dummy[value])
+
+    kc.create_secret_deployment(str(tmp_path), "pr000", 4, 8, verbose=False)
+
+    assert captured["key"] == "manager.yaml"
+    assert "dummy-password" in captured["content"]
+    on_disk = (tmp_path / "manager.yaml").read_text()
+    assert "dummy-password" not in on_disk and "dummy-user" not in on_disk
+    assert "***" in on_disk
+    assert "dummy-password" not in (tmp_path / "deployment_qca.yaml").read_text()

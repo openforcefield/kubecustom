@@ -328,14 +328,42 @@ def create_secret(manager_yaml, secret_name, namespace=None, verbose=True):
 
     with open(manager_yaml, "rb") as file:
         file_content = file.read()
-        # Kubernetes expects base64 encoding in the 'data' field
-        encoded_content = base64.b64encode(file_content).decode("utf-8")
+
+    create_secret_from_content(
+        file_content,
+        secret_name,
+        os.path.basename(manager_yaml),
+        namespace=namespace,
+        verbose=verbose,
+    )
+
+
+def create_secret_from_content(content, secret_name, key, namespace=None, verbose=True):
+    """Create a secret from in-memory content, so that it never needs to be written to disk.
+
+    Args:
+        content (str or bytes): Contents of the secret, e.g., a manager.yaml containing credentials
+        secret_name (str): Name of secret
+        key (str): Key (i.e., filename) under which the content is stored in the secret
+        namespace (str, optional): Kubernetes descriptor to indicate a set of team resources. Defaults to
+        :func:`kubecustom.secret.MyData.get_data("namespace")`.
+        verbose (bool, optional): If False the output will not print to screen. Defaults to True.
+    """
+
+    namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
+
+    config.load_kube_config()  # Refresh credentials
+
+    if isinstance(content, str):
+        content = content.encode("utf-8")
+    # Kubernetes expects base64 encoding in the 'data' field
+    encoded_content = base64.b64encode(content).decode("utf-8")
 
     secret = client.V1Secret(
         api_version="v1",
         kind="Secret",
         metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
-        data={os.path.basename(manager_yaml): encoded_content},
+        data={key: encoded_content},
     )
 
     try:
