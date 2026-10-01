@@ -66,7 +66,7 @@ def create_secret_deployment(
     """
 
     namespace = MyDataInstance.get_data("namespace") if namespace is None else namespace
-    configuration_type = MyDataInstance._configuration_type
+    configuration_type = MyDataInstance.get_data("configuration_type")
 
     if not os.path.isdir(path):
         raise ValueError(f"Directory could not be found: {path}")

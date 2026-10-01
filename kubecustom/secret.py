@@ -1,6 +1,7 @@
 """Create and delete secrets"""
 
 import os
+import re
 import base64
 import warnings
 import yaml
@@ -14,6 +15,20 @@ _init_filename = files("kubecustom").joinpath("template_files/config.yaml")
 _config_type_filename = files("kubecustom").joinpath(
     "template_files/template_keys.yaml"
 )
+
+# Configuration keys whose stored value is the *name* of an environment variable, never the
+# credential itself. The credential is read from the environment by ``MyData.get_data``.
+_ENV_VAR_KEYS = ("username", "password")
+_ENV_VAR_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _check_env_var_name(key, value):
+    """Raise a ValueError if ``value`` is not a valid environment variable name."""
+    if not isinstance(value, str) or not _ENV_VAR_NAME.match(value):
+        raise ValueError(
+            f"The value for, {key}, must be the name of an environment variable (e.g., 'NRP_{key.upper()}'), "
+            "not the credential itself."
+        )
 
 
 class MyData:
@@ -95,7 +110,7 @@ class MyData:
             not in self._attributes
         ):
             raise ValueError(
-                f"The configuration type, {configuration_dict[configuration]['configuration_type']}, is"
+                f"The configuration type, {configuration_dict[configuration]['configuration_type']}, is "
                 f"not a supported configuration type. Must be: {self._attributes.keys()}"
             )
 
@@ -123,7 +138,11 @@ class MyData:
             ValueError: Configuration value was not found.
 
         Returns:
-            \\*: Value from a configuration yaml file.
+            \\*: Value from a configuration yaml file. For ``username`` and ``password`` the configuration
+            file stores the name of an environment variable, and the value of that variable is returned.
+
+        Raises:
+            ValueError: The environment variable named for ``username`` or ``password`` is not set.
         """
         if MyData.configuration is None:
             self._no_config()
@@ -135,7 +154,17 @@ class MyData:
                 f"Must be one of: {configuration_dict[MyData.configuration].keys()}"
             )
 
-        return configuration_dict[MyData.configuration][value]
+        result = configuration_dict[MyData.configuration][value]
+        if value in _ENV_VAR_KEYS:
+            _check_env_var_name(value, result)
+            if result not in os.environ:
+                raise ValueError(
+                    f"The environment variable, {result}, set for {value} in the configuration, "
+                    f"{MyData.configuration}, is not defined in your environment."
+                )
+            result = os.environ[result]
+
+        return result
 
     def _no_config(self, type="error"):
         if type == "error":
@@ -184,6 +213,8 @@ class MyData:
         configuration_type = configuration_dict["configuration_type"]
         for key, value in kwargs.items():
             if key in self._attributes[configuration_type]:
+                if key in _ENV_VAR_KEYS:
+                    _check_env_var_name(key, value)
                 setattr(self, f"_{key}", value)
             else:
                 raise ValueError(
@@ -245,6 +276,8 @@ class MyData:
         ]
         result_config_data = prompt(questions)
         for key, value in result_config_data.items():
+            if key in _ENV_VAR_KEYS:
+                _check_env_var_name(key, value)
             setattr(self, f"_{key}", value)
 
         self._update_file()

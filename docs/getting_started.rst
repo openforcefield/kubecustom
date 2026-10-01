@@ -35,11 +35,19 @@ Just like the set up of `kubectl` you'll need your `.kube/config` file in place.
 
 Kubecustom seeks to simplify your interaction with Kubernetes by using the python API
 alternative to `kubectl`. Part of that process involves saving your information that is expected
-to be repetitively used. This includes your server username and password for secret files, your
+to be repetitively used. This includes the names of the environment variables holding your server
+username and password for secret files (the credentials themselves are never stored), your
 container names, container images, cluster name, user identifier string, and team namespace.
 See :class:`kubecustom.secret.MyData` for more information. In the process of installing
 `kubecustom`, a yaml file that will contain this information is created. `kubecustom` will not
-operate normally until you've populated the file. This can be achieved in two ways:
+operate normally until you've populated the file. The ``username`` and ``password`` entries must be the
+names of environment variables, never the credentials themselves; ``kubecustom`` reads the values from
+your environment when they are needed and raises an error if the variable is not set. For example, add the
+following to your shell profile:
+
+``export NRP_USER=myusername NRP_PASSWORD=mypassword``
+
+The file can be populated in two ways:
 
 Using python scripting...
 ::
@@ -48,8 +56,8 @@ Using python scripting...
 >    MyDataInstance = MyData()
 >    MyDataInstance.add_data(
 >        configuration_name="my-config",
->        username="myusername",
->        password="mypassord",
+>        username="NRP_USER_ENV",
+>        password="NRP_PASSWORD_ENV",
 >        user="my-org-my-initials",
 >        namespace="myorgnamespace",
 >        container_name="my-org-pod",

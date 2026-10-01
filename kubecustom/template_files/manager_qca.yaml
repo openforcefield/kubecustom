@@ -14,7 +14,7 @@ executors:
     type: local
     max_workers: 1
     cores_per_worker: CPUS
-    memory_per_worker: MEMORY # GB
+    memory_per_worker: MEMORY # GiB
     scratch_directory: "/fscratch"
     compute_tags:
       - 'TAG'

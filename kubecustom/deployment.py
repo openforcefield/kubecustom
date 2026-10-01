@@ -166,30 +166,29 @@ def add_node_affinity(deployment, excluded_nodes):
     """
 
     if excluded_nodes:
-        node_selector_terms = [
-            client.V1NodeSelectorTerm(
-                match_expressions=[
-                    client.V1NodeSelectorRequirement(
-                        key="kubernetes.io/hostname",
-                        operator="NotIn",
-                        values=list(excluded_nodes),
-                    )
-                ]
-            )
-        ]
-
-        affinity = client.V1Affinity(
-            node_affinity=client.V1NodeAffinity(
-                required_during_scheduling_ignored_during_execution=client.V1NodeSelector(
-                    node_selector_terms=node_selector_terms
-                )
-            )
+        exclusion = convert_keys_to_camel_case(
+            client.V1NodeSelectorRequirement(
+                key="kubernetes.io/hostname",
+                operator="NotIn",
+                values=list(excluded_nodes),
+            ).to_dict()
         )
 
-        # Add the affinity to the pod template spec
-        deployment["spec"]["template"]["spec"]["affinity"]["nodeAffinity"] = (
-            convert_keys_to_camel_case(affinity.to_dict())["nodeAffinity"]
+        # Expressions within a term are AND-ed, while terms are OR-ed, so the
+        # exclusion is added to every term already defined by the template
+        # (e.g., the GPU compute capability requirement) rather than replacing
+        # them.
+        pod_spec = deployment["spec"]["template"]["spec"]
+        node_affinity = pod_spec.setdefault("affinity", {}).setdefault(
+            "nodeAffinity", {}
         )
+        node_selector = node_affinity.setdefault(
+            "requiredDuringSchedulingIgnoredDuringExecution", {}
+        )
+        terms = node_selector.get("nodeSelectorTerms") or [{}]
+        for term in terms:
+            term.setdefault("matchExpressions", []).append(exclusion)
+        node_selector["nodeSelectorTerms"] = terms
 
     return deployment
 

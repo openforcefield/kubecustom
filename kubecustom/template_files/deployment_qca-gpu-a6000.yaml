@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: DEPLOYMENTNAME
+  labels:
+    k8s-app: USER
+spec:
+  replicas: REPLICAS
+  selector:
+    matchLabels:
+      k8s-app: USER
+  template:
+    metadata:
+      labels:
+        k8s-app: USER
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              # All labels below are published by NVIDIA GPU Feature Discovery on
+              # every GPU node in NRP.
+              #
+              # gpu.compute.major > 7 selects NVIDIA GPUs with compute capability
+              # >= 8.0. (This also satisfies the CUDA 13 floor of sm_75/Turing.)
+              # To pin specific models instead, replace that expression with:
+              #   - key: nvidia.com/gpu.product
+              #     operator: In
+              #     values: ["NVIDIA-A100-SXM4-80GB", "NVIDIA-H100-80GB-HBM3", ...]
+              #
+              # cuda.runtime.major == 13 requires a host driver in the CUDA 13
+              # family (r580+). Do NOT require a newer minor version: psi4 in this
+              # image is built against CUDA 13.0 (build string cuda130py313...),
+              # and CUDA minor version compatibility covers the rest of the family.
+              # An earlier "Gt 12" plus the newest-driver assumption matched
+              # essentially one node in all of NRP, which is how every replica
+              # ended up on a machine with a dead GPU.
+              - matchExpressions:
+                  - key: nvidia.com/gpu.compute.major
+                    operator: Gt
+                    values:
+                      - "7"
+                  - key: nvidia.com/cuda.runtime.major
+                    operator: In
+                    values:
+                      - "13"
+                  # gpu.memory is the GPU's VRAM in MiB.
+                  - key: nvidia.com/gpu.memory
+                    operator: Gt
+                    values:
+                      - "40000"
+                  # nautilus-ext-gpu01 rejects every allocation with
+                  # "failed to get nvlink state: GPU is lost" — a driver-level
+                  # device loss needing an admin reboot. Remove this once NRP
+                  # confirms the node is fixed.
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - "nautilus-ext-gpu01.fullerton.edu"
+      # No explicit tolerations. Three nautilus.io/suncave, /wave and
+      # /science-dmz stanzas used to sit here; they matched zero taints on all
+      # 532 nodes and were deleted. NRP's real reservation key is
+      # nautilus.io/reservation (values such as csu-tide, sdccd), which this
+      # project does not hold. The nvidia.com/gpu PreferNoSchedule toleration is
+      # added automatically by the ExtendedResourceToleration admission
+      # controller, and the node.kubernetes.io/* defaults by the API server, so
+      # none of the six tolerations the pod ends up carrying needs declaring.
+      containers:
+      - image: "CONTAINERIMAGE"
+        name: CONTAINERNAME
+        resources:
+          # THE GPU RESOURCE NAME IS WHAT PICKS THE HARDWARE POOL — not the
+          # affinity block above.
+          #
+          # nvidia.com/rtxa6000 pins this deployment to NRP's RTX-A6000 pool:
+          # 49140 MiB VRAM, 5 reachable nodes / 27 GPU slots as of 2026-09-23
+          # (gpu00.nrp.hpc.udel.edu 4, k8s-a6000-01.csus.edu 8,
+          # nrp-01.csumb.edu 8, nrp-a6000-01.csuchico.edu 6,
+          # k8s-a6000-01.unm.edu 1; cenic-nrp1.hpc.cpp.edu and
+          # discover-nrp-01.sdccd.edu are taint-blocked).
+          #
+          # NRP advertises most GPU families under a NAMED extended resource
+          # (nvidia.com/a40, /rtxa6000, /a100, /h100, /h200, /gh200,
+          # /rtx6000bw, /rtx8000) and publishes nvidia.com/gpu capacity 0 on
+          # those same nodes. No node in the cluster publishes both, so
+          # deployment_qca-gpu.yaml's generic nvidia.com/gpu can never reach
+          # these nodes — at the earlier 40000 VRAM floor it reached only the
+          # L40/L40S tier, and it tops out at 46068 MiB either way. That is
+          # why this file exists as a separate configuration_type.
+          # See https://nrp.ai/documentation/userdocs/running/gpu-pods/
+          #
+          # resources.requests is ANDed, so one pod cannot ask for
+          # "rtxa6000 OR a40" — listing both demands a node with both, i.e.
+          # none. Unlike a100/h100/h200/gh200, rtxa6000 carries no
+          # per-namespace ResourceQuota and needs no allocation request.
+          limits:
+            cpu: CPUS
+            memory: MEMORYGi
+            ephemeral-storage: 20Gi
+            nvidia.com/rtxa6000: 1
+          requests:
+            cpu: CPUS
+            memory: MEMORYGi
+            ephemeral-storage: 20Gi
+            nvidia.com/rtxa6000: 1
+        volumeMounts:
+          - name: manager-config-secret
+            mountPath: "/etc/qcfractal-manager"
+            readOnly: true
+          - name: fscratch
+            mountPath: /fscratch
+        env:
+          # NVIDIA_VISIBLE_DEVICES is deliberately not set: once the GPU resource is
+          # requested, the device plugin sets it to the specific device allocated to
+          # this pod. Hardcoding "all" overrides that and asks for every GPU on the
+          # node.
+          # VERIFIED 2026-09-23 on a live pod requesting the RENAMED resource
+          # nvidia.com/rtxa6000: the container saw
+          # NVIDIA_VISIBLE_DEVICES=GPU-79a50d74-... (a specific UUID, not "all")
+          # and exactly one device node. Injection works on the named path, not
+          # just the generic one.
+          - name: NVIDIA_DRIVER_CAPABILITIES
+            value: "compute,utility"
+          # cuest ships PTX rather than a cubin for every architecture, so its first
+          # GPU call JIT-compiles the whole kernel set — measured at 57 s inside a
+          # single "HF: Form core H" call, dropping to 0.05 s once cached (26 MB).
+          # Point the cache at /fscratch so it lands on the emptyDir rather than the
+          # container filesystem. Paid once per pod, not once per task.
+          - name: CUDA_CACHE_PATH
+            value: "/fscratch/nv-cache"
+      volumes:
+        - name: manager-config-secret
+          secret:
+            secretName: DEPLOYMENTNAME
+        - name: fscratch
+          emptyDir: {}

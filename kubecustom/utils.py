@@ -1,6 +1,7 @@
 """Utilities for unit and case conversions and file manipulation"""
 
 import os
+import re
 import yaml
 import warnings
 import argparse
@@ -33,6 +34,34 @@ def repeat_task(scheduler, function, kwargs, timelag=60):
     function(**kwargs)
 
 
+_QUANTITY_RE = re.compile(
+    r"^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([A-Za-z]*)$"
+)
+
+
+def _split_quantity(quantity, kind):
+    """Split a Kubernetes resource quantity into its numeric value and unit suffix.
+
+    Handles fractional values such as "1.5Gi" or "0.5", which a digit-wise scan
+    truncates at the decimal point.
+
+    Args:
+        quantity (str): Quantity and optional unit, e.g. "1.5Gi", "500m", "8"
+        kind (str): Name of the quantity, used in the error message
+
+    Raises:
+        ValueError: The string is not a recognizable quantity
+
+    Returns:
+        tuple: (float, str) The numeric value and the unit suffix, "" if absent.
+    """
+    match = _QUANTITY_RE.match(str(quantity).strip())
+    if match is None:
+        raise ValueError(f"Could not parse the {kind} quantity: {quantity!r}")
+
+    return float(match.group(1)), match.group(2)
+
+
 def convert_cpu_use(cpu_usage, issue_warnings=True):
     """Take a string indicating CPU usage and output a float of
     whole number of CPUs used.
@@ -49,10 +78,7 @@ def convert_cpu_use(cpu_usage, issue_warnings=True):
     """
     unit_conversion = {"m": 1 / 1000}
 
-    cpu_usage.replace(" ", "")
-    ind = [i for i, x in enumerate(cpu_usage) if not x.isdigit()]
-    ind = ind[0] if len(ind) > 0 else len(cpu_usage)
-    cpu_float, cpu_unit = float(cpu_usage[:ind]), cpu_usage[ind:]
+    cpu_float, cpu_unit = _split_quantity(cpu_usage, "CPU")
 
     if cpu_unit in unit_conversion:
         cpu_float *= unit_conversion[cpu_unit]
@@ -97,10 +123,7 @@ def convert_memory_use(mem_usage):
         "": 1e-9,
         "m": 9.3132257461548e-13,
     }
-    mem_usage.replace(" ", "")
-    ind = [i for i, x in enumerate(mem_usage) if not x.isdigit()]
-    ind = ind[0] if len(ind) > 0 else len(mem_usage)
-    mem_float, mem_unit = float(mem_usage[:ind]), mem_usage[ind:]
+    mem_float, mem_unit = _split_quantity(mem_usage, "Memory")
 
     if mem_unit in unit_conversion:
         mem_float *= unit_conversion[mem_unit]

@@ -30,11 +30,11 @@ spec:
         resources:
           limits:
             cpu: CPUS
-            memory: MEMORYG
+            memory: MEMORYGi
             ephemeral-storage: 20Gi
           requests:
             cpu: CPUS
-            memory: MEMORYG
+            memory: MEMORYGi
             ephemeral-storage: 20Gi
         volumeMounts:
           - name: manager-config-secret

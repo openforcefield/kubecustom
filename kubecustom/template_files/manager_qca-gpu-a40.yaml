@@ -1,0 +1,29 @@
+# QCFractal compute manager for GPU pods.
+#
+# QCFractal's executor config has no GPU field: the GPU is handed to the pod by
+# Kubernetes (`nvidia.com/a40: 1` in deployment_qca-gpu-a40.yaml) and reaches
+# the worker through CUDA_VISIBLE_DEVICES, which the NVIDIA device plugin sets.
+# The only thing to keep in sync here is `max_workers: 1`, so that one worker
+# owns the one GPU the pod requests.
+cluster: CLUSTERNAME
+loglevel: INFO
+update_frequency: 100.0
+parsl_run_dir: "/fscratch/parsl_run_dir"
+
+server:
+  fractal_uri: https://api.qcarchive.molssi.org
+  username: USERNAME
+  password: PASSWORD
+  verify: True
+
+executors:
+  local_executor:
+    type: local
+    max_workers: 1  # one worker per pod, matching nvidia.com/a40: 1
+    cores_per_worker: CPUS
+    memory_per_worker: MEMORY # GiB
+    scratch_directory: "/fscratch"
+    compute_tags:
+      - 'TAG'
+    environments:
+      use_manager_environment: True
