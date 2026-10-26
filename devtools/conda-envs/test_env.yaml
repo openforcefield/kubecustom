@@ -1,14 +1,26 @@
 name: test
 channels:
-
+  - conda-forge
   - defaults
+
 dependencies:
     # Base depends
-  - python
+  - python=3.12
   - pip
   - numpy
   - pyyaml
-  - inquirerpy
+  - InquirerPy
+  - kubernetes
+  - pandas
+  - ipython
+
+    # Docs
+  - sphinx>2.1
+  - docutils>=0.17
+  - sphinx-copybutton
+  - pydata-sphinx-theme>=0.15
+  - nbsphinx
+  - nbconvert>=7
 
     # Testing
   - pytest
@@ -19,3 +31,4 @@ dependencies:
   - pip:
     - codecov
     - kubernetes
+    - sphinx-design
