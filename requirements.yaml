@@ -7,6 +7,7 @@ dependencies:
   - python
   - pip
   - numpy
+  - pandas
   - kubernetes
   - pyyaml
   - sphinx>2.1
@@ -18,3 +19,4 @@ dependencies:
   - sphinx-copybutton
   - pydata-sphinx-theme
   - nbsphinx
+  - ipython
