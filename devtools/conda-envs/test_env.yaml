@@ -32,3 +32,4 @@ dependencies:
     - codecov
     - kubernetes
     - sphinx-design
+    - ../..
